@@ -1,0 +1,1629 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pattern Drills — Missions</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+<style>
+  :root{
+    --bg:#ffffff; --panel:#f4f6f9; --panel2:#e9edf3; --line:#dce1e8;
+    --text:#161a20; --muted:#5c6675; --accent:#2563eb; --accent2:#0891b2;
+    --gold:#d9a406; --pass:#16a34a; --fail:#dc2626; --pass-bg:#dcfce7; --fail-bg:#fee2e2;
+    --easy:#16a34a; --medium:#d97706; --codebg:#f1f3f7;
+    --ptr:#db2777; --win:#0891b233; --done:#16a34a26;
+  }
+  html[data-theme="dark"]{
+    --bg:#0a0e14; --panel:#111722; --panel2:#18202e; --line:#25303f;
+    --text:#e7edf5; --muted:#8a97a8; --accent:#38bdf8; --accent2:#22d3ee;
+    --gold:#fbbf24; --pass:#3fb950; --fail:#f85149; --pass-bg:#122019; --fail-bg:#2d1618;
+    --easy:#3fb950; --medium:#e3b341; --codebg:#0d1420;
+    --ptr:#f472b6; --win:#22d3ee2e; --done:#3fb95024;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text); overflow:hidden;
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex; flex-direction:column;
+  }
+  code,.mono{font-family:ui-monospace,SFMono-Regular,"Cascadia Code",Consolas,monospace}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+
+  /* ---------- top bar ---------- */
+  header{
+    flex:0 0 auto; display:flex; align-items:center; gap:14px; height:50px;
+    padding:0 16px; border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .brand{font-weight:800; letter-spacing:2px; font-size:13px; text-transform:uppercase; color:var(--accent2)}
+  .brand b{color:var(--text)}
+  header .sp{flex:1}
+  .hud{display:flex; align-items:center; gap:6px; font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px}
+  .hud .big{color:var(--gold); font-weight:800}
+  #rt{font-size:12px; color:var(--muted)}
+  #rt.ok{color:var(--pass)} #rt.err{color:var(--fail)}
+  header button{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:5px; padding:6px 11px; cursor:pointer; font-size:12px; font-weight:600; letter-spacing:.3px;
+  }
+  header button:hover{border-color:var(--accent)}
+
+  .layout{flex:1; display:flex; min-height:0}
+
+  /* ---------- mission rail ---------- */
+  aside{
+    flex:0 0 296px; border-right:1px solid var(--line); background:var(--panel);
+    overflow-y:auto; padding-bottom:24px;
+  }
+  .chap{
+    padding:14px 14px 6px; font-size:10.5px; letter-spacing:1.4px; text-transform:uppercase;
+    color:var(--muted); font-weight:800; display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .chap .cs{color:var(--gold); letter-spacing:1px}
+  .mrow{
+    display:flex; align-items:center; gap:9px; padding:8px 14px; cursor:pointer;
+    border-left:3px solid transparent;
+  }
+  .mrow:hover{background:var(--panel2)}
+  .mrow.active{background:var(--panel2); border-left-color:var(--accent2)}
+  .mrow .idx{
+    flex:0 0 24px; height:24px; display:grid; place-items:center; font-size:11px; font-weight:800;
+    background:var(--panel2); border:1px solid var(--line); transform:skewX(-8deg); color:var(--muted);
+  }
+  .mrow.done3 .idx{background:var(--gold); color:#1a1500; border-color:var(--gold)}
+  .mrow .mt{flex:1 1 0; min-width:0; overflow:hidden}
+  .mrow .mt .nm{font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .mrow .mt .st{font-size:10px; color:var(--gold); letter-spacing:1px}
+  .mrow .mt .st .o{color:var(--line)}
+  .pill{font-size:9px; padding:1px 6px; border-radius:999px; border:1px solid currentColor; text-transform:uppercase; letter-spacing:.5px; font-weight:700}
+  .pill.easy{color:var(--easy)} .pill.medium{color:var(--medium)}
+
+  /* ---------- main ---------- */
+  main{flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden}
+  .scroll{flex:1; min-height:0; overflow-y:auto; overflow-x:hidden}
+
+  /* career landing */
+  .career{padding:22px; max-width:1100px}
+  .career h1{margin:0 0 4px; font-size:22px; letter-spacing:1px}
+  .career .sub{color:var(--muted); margin-bottom:20px}
+  .cgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px}
+  .ccard{border:1px solid var(--line); background:var(--panel); border-radius:10px; padding:14px}
+  .ccard h3{margin:0 0 2px; font-size:13px; letter-spacing:.6px; text-transform:uppercase}
+  .ccard .cmeta{color:var(--muted); font-size:11px; margin-bottom:10px}
+  .cbar{height:6px; background:var(--panel2); border-radius:999px; overflow:hidden; margin-bottom:10px}
+  .cbar i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .cchip{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 9px; margin:3px 4px 0 0;
+    border:1px solid var(--line); border-radius:6px; cursor:pointer; font-size:11.5px;
+  }
+  .cchip:hover{border-color:var(--accent)}
+  .cchip .s{color:var(--gold); font-size:9px; letter-spacing:1px}
+
+  /* mission header */
+  .mhead{
+    flex:0 0 auto; padding:12px 18px 0; border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .mhead .row1{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .mhead .mno{font-weight:800; color:var(--accent2); letter-spacing:1px; font-size:12px}
+  .mhead h2{margin:0; font-size:18px}
+  .mhead .stars{color:var(--gold); letter-spacing:2px; font-size:14px}
+  .mhead .stars .o{color:var(--line)}
+  .mhead .timer{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:13px}
+  .tabs{display:flex; gap:4px; margin-top:10px}
+  .tab{
+    padding:8px 14px 9px; cursor:pointer; font-size:11.5px; font-weight:700; letter-spacing:.6px;
+    text-transform:uppercase; color:var(--muted); border:1px solid transparent; border-bottom:none;
+    border-radius:6px 6px 0 0;
+  }
+  .tab:hover{color:var(--text)}
+  .tab.on{color:var(--text); background:var(--bg); border-color:var(--line)}
+  .tab .dot{color:var(--gold)} .tab .dot.off{color:var(--line)}
+
+  .stage{padding:16px 18px 40px}
+  h4.sec{margin:18px 0 6px; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted)}
+  .desc code{background:var(--codebg); padding:1px 5px; border-radius:4px; font-size:12.5px}
+  .desc ul{margin:6px 0; padding-left:20px}
+  .ex{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:9px 11px; margin:6px 0; white-space:pre-wrap; font-size:12.5px}
+
+  /* ---------- replay ---------- */
+  .replay-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:14px}
+  @media(max-width:900px){ .replay-grid{grid-template-columns:1fr} }
+  .rcode{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--codebg)}
+  .rcode pre{margin:0; padding:10px 0; font-size:12.5px; line-height:1.7; overflow-x:auto}
+  .rcode .ln{display:block; padding:0 14px 0 46px; position:relative; white-space:pre}
+  .rcode .ln::before{content:attr(data-n); position:absolute; left:0; width:36px; text-align:right; color:var(--muted); opacity:.6}
+  .rcode .ln.cur{background:var(--win); box-shadow:inset 3px 0 0 var(--accent2)}
+  .vizbox{border:1px solid var(--line); border-radius:8px; padding:12px; background:var(--panel); min-height:170px}
+  .vizbox .cap{font-size:11px; color:var(--muted); margin-bottom:10px; min-height:16px}
+  .cells{display:flex; flex-wrap:wrap; gap:4px}
+  .cell{
+    min-width:34px; height:38px; display:grid; place-items:center; font-size:13px; font-weight:700;
+    border:1px solid var(--line); border-radius:5px; background:var(--bg); position:relative;
+  }
+  .cell.win{background:var(--win)} .cell.done{background:var(--done)}
+  .cell .mk{
+    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    font-size:9px; font-weight:800; color:var(--ptr); white-space:nowrap; letter-spacing:.5px;
+  }
+  .cell.hit{outline:2px solid var(--ptr); outline-offset:1px}
+  .idxs{display:flex; flex-wrap:wrap; gap:4px; margin-top:3px}
+  .idxs span{min-width:34px; text-align:center; font-size:9px; color:var(--muted)}
+  .stat{display:inline-block; margin:8px 10px 0 0; font-size:12px}
+  .stat b{color:var(--accent2)}
+  .nodes{display:flex; align-items:center; flex-wrap:wrap; gap:2px; margin-top:6px}
+  .node{border:1px solid var(--line); border-radius:5px; padding:6px 9px; font-weight:700; font-size:12px; background:var(--bg); position:relative}
+  .node .mk{position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:800; color:var(--ptr)}
+  .arrow{color:var(--muted)}
+  .stackwrap{display:flex; flex-direction:column-reverse; gap:3px; min-height:44px; align-items:flex-start}
+  .sbox{border:1px solid var(--line); background:var(--bg); padding:4px 12px; border-radius:4px; font-weight:700}
+  .chips span{display:inline-block; padding:3px 7px; margin:2px; border:1px solid var(--line); border-radius:5px; font-size:11px}
+  .chips span.new{border-color:var(--accent2); color:var(--accent2)}
+  .vtable{width:100%; border-collapse:collapse; margin-top:8px; font-size:12px}
+  .vtable td{border-top:1px solid var(--line); padding:3px 8px; vertical-align:top}
+  .vtable td.k{color:var(--muted); width:1%; white-space:nowrap; font-weight:700}
+  .vtable td.chg{color:var(--accent2)}
+  .rctrl{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
+  .rctrl button{background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:5px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:600}
+  .rctrl button:hover{border-color:var(--accent)}
+  .rctrl .pos{color:var(--muted); font-variant-numeric:tabular-nums; font-size:12px}
+
+  /* ---------- editor / solve ---------- */
+  .editorwrap{height:56vh; min-height:300px; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+  .CodeMirror{height:100%; font-size:13px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+  textarea.fb{flex:1; width:100%; font-family:ui-monospace,monospace; font-size:13px; border:0; padding:10px; background:var(--bg); color:var(--text); resize:none}
+  .actions{display:flex; align-items:center; gap:8px; padding:10px 0; flex-wrap:wrap; position:sticky; top:0; background:var(--bg); z-index:4}
+  .actions button{border-radius:5px; padding:8px 15px; cursor:pointer; border:1px solid var(--line); font-size:12.5px; font-weight:700; background:var(--panel2); color:var(--text)}
+  .actions .run{background:var(--pass); color:#fff; border-color:var(--pass)}
+  .actions .submit{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .actions button:disabled{opacity:.5; cursor:default}
+  .actions .hb{margin-left:auto; display:flex; gap:6px; align-items:center}
+  .actions .hb span{color:var(--muted); font-size:11px}
+  .rsummary{padding:8px 2px; font-weight:800; letter-spacing:.3px}
+  .rsummary.pass{color:var(--pass)} .rsummary.fail{color:var(--fail)}
+  .case{border:1px solid var(--line); border-left-width:4px; border-radius:6px; padding:8px 10px; margin:6px 0; font-size:12px; white-space:pre-wrap; overflow-x:auto}
+  .case.pass{border-left-color:var(--pass); background:var(--pass-bg)}
+  .case.fail{border-left-color:var(--fail); background:var(--fail-bg)}
+  .case .b{font-weight:800}
+  .case.pass .b{color:var(--pass)} .case.fail .b{color:var(--fail)}
+  .errbox{border:1px solid var(--fail); border-left-width:4px; background:var(--fail-bg); border-radius:6px; padding:10px; margin:8px 0; font-size:12px; white-space:pre-wrap; color:var(--fail)}
+  .hint{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin:6px 0}
+  .hint h5{margin:0 0 4px; font-size:10.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--muted)}
+  .hint pre{background:var(--codebg); padding:10px; border-radius:6px; overflow-x:auto; font-size:12px; margin:6px 0 0}
+
+  /* ---------- concept ---------- */
+  .subhead{display:flex; align-items:center; gap:8px}
+  .subhead .tick{color:var(--pass); font-weight:800}
+  .mcq{border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:10px 0; background:var(--panel)}
+  .mcq .q{font-weight:600; margin-bottom:8px}
+  .opt{display:block; padding:8px 10px; border:1px solid var(--line); border-radius:6px; margin:5px 0; cursor:pointer; font-size:13px}
+  .opt:hover{border-color:var(--accent)}
+  .opt.sel{border-color:var(--accent)}
+  .opt.right{border-color:var(--pass); background:var(--pass-bg)}
+  .opt.wrong{border-color:var(--fail); background:var(--fail-bg)}
+  .mcq .exp{margin-top:8px; font-size:12px; color:var(--muted); display:none}
+  .mcq.answered .exp{display:block}
+  .parsons{display:flex; flex-direction:column; gap:5px; margin:8px 0}
+  .pline{
+    display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:6px;
+    padding:6px 8px; background:var(--panel); cursor:grab; font-size:12.5px;
+  }
+  .pline.drag{opacity:.4}
+  .pline.ok{border-color:var(--pass)} .pline.bad{border-color:var(--fail)}
+  .pline .code{flex:1; white-space:pre; overflow-x:auto}
+  .pline .mv{display:flex; flex-direction:column}
+  .pline .mv button{border:1px solid var(--line); background:var(--panel2); color:var(--text); cursor:pointer; font-size:9px; line-height:1; padding:2px 4px; border-radius:3px}
+  .cbtn{border-radius:5px; padding:8px 14px; cursor:pointer; border:1px solid var(--line); font-size:12.5px; font-weight:700; background:var(--panel2); color:var(--text)}
+  .cbtn.go{background:var(--accent); color:#fff; border-color:var(--accent)}
+
+  /* modal / toast / fx */
+  .modal{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50}
+  .modal.show{display:flex}
+  .modal .card{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:20px; width:min(560px,92vw); max-height:80vh; overflow-y:auto}
+  .modal .x{float:right; cursor:pointer; border:1px solid var(--line); background:var(--panel2); border-radius:5px; padding:3px 9px}
+  .drow{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line)}
+  .drow .n{flex:1} .drow .bar{flex:0 0 130px; height:8px; background:var(--panel2); border-radius:999px; overflow:hidden}
+  .drow .bar i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .drow .v{flex:0 0 52px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums}
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--gold); color:#1a1400; padding:11px 20px; border-radius:8px; font-weight:800; letter-spacing:.5px; opacity:0; transition:.25s; pointer-events:none; z-index:60}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .fx{position:fixed; width:9px; height:9px; z-index:59; pointer-events:none; border-radius:2px}
+  @keyframes fall{to{transform:translate(var(--dx),70vh) rotate(540deg); opacity:0}}
+  .empty{margin:auto; color:var(--muted); text-align:center; padding:50px}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand">◆ <b>PATTERN</b> DRILLS</span>
+  <span class="sp"></span>
+  <span class="hud" title="stars earned">★ <span class="big" id="hud-stars">0</span> / 54</span>
+  <span class="hud" title="missions fully cleared">✦ <span id="hud-missions">0</span> / 18</span>
+  <span id="rt">runtime idle</span>
+  <button id="btn-home">Career</button>
+  <button id="btn-dash">Stats</button>
+  <button id="btn-theme">Light</button>
+</header>
+
+<div class="layout">
+  <aside id="rail"></aside>
+  <main id="main"><div class="scroll"><div class="empty">Loading missions…</div></div></main>
+</div>
+
+<div class="modal" id="modal"><div class="card"><span class="x" id="modal-x">esc</span><h2>Progress</h2><div id="dash"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<!-- ===================== Pyodide code: test runner + tracer ===================== -->
+<script id="py-src" type="text/plain">
+import json, sys, traceback
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def to_linked(arr):
+    dummy = ListNode(); cur = dummy
+    for x in arr:
+        cur.next = ListNode(x); cur = cur.next
+    return dummy.next
+
+def from_linked(node):
+    out = []; seen = set()
+    while node is not None:
+        if id(node) in seen: break
+        seen.add(id(node)); out.append(node.val); node = node.next
+    return out
+
+def make_cycle(arr, pos):
+    head = to_linked(arr)
+    if head is None: return None
+    nodes = []; cur = head
+    while cur is not None:
+        nodes.append(cur); cur = cur.next
+    if pos is not None and 0 <= pos < len(nodes):
+        nodes[-1].next = nodes[pos]
+    return head
+
+def build_args(inp, t):
+    if t == "linked": return [to_linked(inp[0])] + list(inp[1:])
+    if t == "cycle":  return [make_cycle(inp[0], inp[1])]
+    return list(inp)
+
+def transform_result(r, t):
+    if t == "linked": return from_linked(r)
+    return r
+
+def normalize(v, c):
+    if c == "sorted_list": return sorted(v)
+    if c == "nested_set":  return sorted([sorted(x) for x in v])
+    return v
+
+def run_all(user_code, func_name, cases, opts):
+    ns = {"ListNode": ListNode}
+    try:
+        exec(user_code, ns)
+    except Exception:
+        return {"compile_error": traceback.format_exc()}
+    if func_name not in ns or not callable(ns[func_name]):
+        return {"compile_error": "Function '%s' is not defined. Keep the given function name." % func_name}
+    fn = ns[func_name]
+    at = opts.get("arg_transform"); rt = opts.get("result_transform"); cmp = opts.get("compare")
+    results = []
+    for c in cases:
+        inp = c["input"]; exp = c["expected"]
+        try:
+            args = build_args(inp, at)
+            r = fn(*args)
+            if cmp == "remove_duplicates":
+                n = r if isinstance(r, int) else -1
+                got = {"len": n, "prefix": list(args[0])[:n] if isinstance(n, int) and n > 0 else []}
+                results.append({"passed": got == exp, "got": repr(got), "expected": repr(exp), "error": None})
+            else:
+                r = transform_result(r, rt)
+                g = normalize(r, cmp); e = normalize(exp, cmp)
+                results.append({"passed": g == e, "got": repr(g), "expected": repr(e), "error": None})
+        except RecursionError:
+            results.append({"passed": False, "got": None, "expected": repr(exp), "error": "RecursionError: maximum recursion depth exceeded"})
+        except Exception:
+            results.append({"passed": False, "got": None, "expected": repr(exp), "error": traceback.format_exc(limit=2)})
+    return {"results": results}
+
+# ---------- tracer for the debug replay ----------
+def jsonify(v):
+    if v is None or isinstance(v, (bool, int, float, str)):
+        return v
+    if isinstance(v, ListNode):
+        return {"__list__": from_linked(v)}
+    if isinstance(v, dict):
+        return {str(k): jsonify(x) for k, x in list(v.items())[:60]}
+    if isinstance(v, (list, tuple)):
+        return [jsonify(x) for x in list(v)[:60]]
+    if isinstance(v, set):
+        return {"__set__": [jsonify(x) for x in list(v)[:60]]}
+    try:
+        return repr(v)
+    except Exception:
+        return "<obj>"
+
+def node_index(head, node):
+    if head is None or node is None: return -1
+    cur = head; i = 0; seen = set()
+    while cur is not None:
+        if cur is node: return i
+        if id(cur) in seen: return -1
+        seen.add(id(cur)); cur = cur.next; i += 1
+    return -1
+
+def trace_solution(code, func_name, trace_input, opts):
+    code = code.strip("\n")
+    ns = {"ListNode": ListNode}
+    exec(code, ns)
+    fn = ns[func_name]
+    at = opts.get("arg_transform")
+    args = build_args(trace_input, at)
+    head_ref = args[0] if at in ("linked", "cycle") else None
+    probe = opts.get("probe", [])
+    probe_index = opts.get("probe_index", {})
+    steps = []
+    LIMIT = 700
+    def rec(frame, event, arg):
+        if frame.f_code.co_filename != "<string>":
+            return rec
+        if event not in ("line", "return"):
+            return rec
+        if len(steps) >= LIMIT:
+            return rec
+        loc = {k: jsonify(v) for k, v in list(frame.f_locals.items())}
+        pr = {n: (jsonify(frame.f_locals[n]) if n in frame.f_locals else None) for n in probe}
+        pri = {}
+        for n, base in probe_index.items():
+            b = head_ref if base == "head" else frame.f_locals.get(base)
+            pri[n] = node_index(b, frame.f_locals.get(n))
+        steps.append({"line": frame.f_lineno, "event": event, "locals": loc,
+                      "probe": pr, "probe_index": pri,
+                      "ret": jsonify(arg) if event == "return" else None})
+        return rec
+    sys.settrace(rec)
+    try:
+        result = fn(*args)
+    except Exception:
+        sys.settrace(None)
+        return {"error": traceback.format_exc(limit=2), "code": code, "steps": steps}
+    sys.settrace(None)
+    return {"steps": steps, "result": jsonify(result), "code": code}
+</script>
+
+<!-- ===================== Web worker ===================== -->
+<script id="worker-src" type="text/plain">
+let ready = null;
+async function ensurePy(){
+  if(!ready){
+    ready = (async () => {
+      importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');
+      self.pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
+      self.pyodide.runPython(PY_RUNNER);
+    })();
+  }
+  return ready;
+}
+self.onmessage = async (e) => {
+  const m = e.data;
+  if(m.type === 'init'){
+    try { await ensurePy(); self.postMessage({type:'ready'}); }
+    catch(err){ self.postMessage({type:'initerror', error:String(err)}); }
+    return;
+  }
+  try{
+    await ensurePy();
+    const py = self.pyodide;
+    if(m.type === 'run'){
+      py.globals.set('A', m.code); py.globals.set('B', m.funcName);
+      py.globals.set('C', JSON.stringify(m.cases)); py.globals.set('D', JSON.stringify(m.opts));
+      const out = py.runPython("json.dumps(run_all(A, B, json.loads(C), json.loads(D)))");
+      self.postMessage({type:'result', jobId:m.jobId, data: JSON.parse(out)});
+    } else if(m.type === 'trace'){
+      py.globals.set('A', m.code); py.globals.set('B', m.funcName);
+      py.globals.set('C', JSON.stringify(m.input)); py.globals.set('D', JSON.stringify(m.opts));
+      const out = py.runPython("json.dumps(trace_solution(A, B, json.loads(C), json.loads(D)))");
+      self.postMessage({type:'result', jobId:m.jobId, data: JSON.parse(out)});
+    }
+  }catch(err){
+    self.postMessage({type:'result', jobId:m.jobId, data:{compile_error:String(err)}});
+  }
+};
+</script>
+
+<!-- ===================== Problem / mission data ===================== -->
+<script id="problems-src" type="application/json">
+[
+{
+  "id":"two-sum-sorted","title":"Two Sum II (sorted input)","chapter":"Two-pointer (opposite ends)",
+  "difficulty":"Easy","func":"two_sum_sorted",
+  "desc":"<p>You are given an array <code>nums</code> sorted in <b>non-decreasing</b> order and an integer <code>target</code>. Return the <b>0-based indices</b> <code>[i, j]</code> with <code>i &lt; j</code> such that <code>nums[i] + nums[j] == target</code>.</p><ul><li>Exactly one valid pair exists.</li><li>You may not use the same element twice.</li><li>Aim for O(n) time and O(1) extra space.</li></ul>",
+  "examples":[{"i":"two_sum_sorted([2,7,11,15], 9)","o":"[0, 1]  (2 + 7 = 9)"},{"i":"two_sum_sorted([2,3,4], 6)","o":"[0, 2]  (2 + 4 = 6)"}],
+  "starter":"def two_sum_sorted(nums, target):\n    # nums is sorted ascending; return [i, j] with i < j\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[[2,7,11,15],9],"expected":[0,1]},
+    {"input":[[2,3,4],6],"expected":[0,2]},
+    {"input":[[-1,0],-1],"expected":[0,1]},
+    {"input":[[5,25,75],100],"expected":[1,2]}],
+  "hints":[
+    "Pattern: Two-pointer (opposite ends).",
+    "Start one pointer at each end; if the sum is too small move the left pointer up, if too big move the right pointer down.",
+    "def two_sum_sorted(nums, target):\n    lo, hi = 0, len(nums) - 1\n    while lo < hi:\n        s = nums[lo] + nums[hi]\n        if s == target:\n            return [lo, hi]\n        elif s < target:\n            lo += 1\n        else:\n            hi -= 1\n    return []"],
+  "trace":{"input":[[2,7,11,15],9],"viz":{"kind":"array","arr":"nums","ptr":{"lo":"lo","hi":"hi"},"stats":["s"]}},
+  "mcqs":[
+    {"q":"Why can two pointers replace a hash map here?","options":["The array has no duplicates","The array is sorted, so moving a pointer changes the sum predictably","We are allowed O(n) extra space","The target is always positive"],"correct":1,"explain":"Sortedness means increasing lo raises the sum and decreasing hi lowers it, so each comparison eliminates one candidate."},
+    {"q":"If nums[lo] + nums[hi] > target, what is the next move?","options":["lo += 1","hi -= 1","return []","restart both pointers"],"correct":1,"explain":"The sum is too big, and nums[hi] is the largest available value, so shrink from the right."},
+    {"q":"Time and space complexity?","options":["O(n log n) time, O(1) space","O(n) time, O(n) space","O(n) time, O(1) space","O(n^2) time, O(1) space"],"correct":2,"explain":"Each pointer moves at most n steps and no extra structure is allocated."}]
+},
+{
+  "id":"valid-palindrome","title":"Valid Palindrome","chapter":"Two-pointer (opposite ends)",
+  "difficulty":"Easy","func":"is_palindrome",
+  "desc":"<p>Return <code>True</code> if the string <code>s</code> is a palindrome after (a) lower-casing every letter and (b) removing every character that is not a letter or digit.</p><ul><li>An empty string (or one that becomes empty) counts as a palindrome.</li><li>Do it in O(1) extra space — compare in place, don't build a cleaned copy.</li></ul>",
+  "examples":[{"i":"is_palindrome(\"A man, a plan, a canal: Panama\")","o":"True"},{"i":"is_palindrome(\"race a car\")","o":"False"}],
+  "starter":"def is_palindrome(s):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":["A man, a plan, a canal: Panama"],"expected":true},
+    {"input":["race a car"],"expected":false},
+    {"input":["   "],"expected":true},
+    {"input":["0P"],"expected":false}],
+  "hints":[
+    "Pattern: Two-pointer (opposite ends).",
+    "Walk one pointer in from each end, skipping non-alphanumeric characters, and compare the lower-cased characters.",
+    "def is_palindrome(s):\n    i, j = 0, len(s) - 1\n    while i < j:\n        while i < j and not s[i].isalnum():\n            i += 1\n        while i < j and not s[j].isalnum():\n            j -= 1\n        if s[i].lower() != s[j].lower():\n            return False\n        i += 1\n        j -= 1\n    return True"],
+  "trace":{"input":["a#Ba"],"viz":{"kind":"array","arr":"s","ptr":{"i":"i","j":"j"},"stats":[]}},
+  "mcqs":[
+    {"q":"What do the two inner while loops do?","options":["Reverse the string","Skip characters that are not letters or digits","Count vowels","Lower-case the string"],"correct":1,"explain":"They advance i / retreat j past punctuation and spaces so only alphanumerics are compared."},
+    {"q":"Which comparison decides a mismatch?","options":["s[i] == s[j]","s[i].lower() != s[j].lower()","ord(s[i]) - ord(s[j])","s[i] in s[j]"],"correct":1,"explain":"Case is ignored, so both sides are lower-cased before comparing."},
+    {"q":"Space complexity of the two-pointer version?","options":["O(n)","O(1)","O(n log n)","O(2^n)"],"correct":1,"explain":"Only two integer indices are stored; the string is scanned in place."}]
+},
+{
+  "id":"remove-duplicates","title":"Remove Duplicates from Sorted Array","chapter":"Two-pointer (same-direction read/write)",
+  "difficulty":"Easy","func":"remove_duplicates",
+  "desc":"<p>Given <code>nums</code> sorted in non-decreasing order, remove the duplicates <b>in place</b> so that each unique value appears once. Return the new length <code>k</code>; the first <code>k</code> slots of <code>nums</code> must contain those unique values in their original order. What is left after index <code>k</code> does not matter.</p><ul><li>You must not allocate a second array.</li><li>The grader checks both the returned <code>k</code> and <code>nums[:k]</code>.</li></ul>",
+  "examples":[{"i":"remove_duplicates([1,1,2])","o":"2   and nums begins  1, 2"},{"i":"remove_duplicates([0,0,1,1,1,2,2,3,3,4])","o":"5   and nums begins  0, 1, 2, 3, 4"}],
+  "starter":"def remove_duplicates(nums):\n    # edit nums in place, return the new length\n    pass\n",
+  "opts":{"compare":"remove_duplicates"},"visible":2,
+  "tests":[
+    {"input":[[1,1,2]],"expected":{"len":2,"prefix":[1,2]}},
+    {"input":[[0,0,1,1,1,2,2,3,3,4]],"expected":{"len":5,"prefix":[0,1,2,3,4]}},
+    {"input":[[]],"expected":{"len":0,"prefix":[]}},
+    {"input":[[1,2,3]],"expected":{"len":3,"prefix":[1,2,3]}}],
+  "hints":[
+    "Pattern: Two-pointer (same-direction read/write).",
+    "Keep a write index; for each element only write it (and advance the write index) when it differs from the last written value.",
+    "def remove_duplicates(nums):\n    if not nums:\n        return 0\n    w = 1\n    for r in range(1, len(nums)):\n        if nums[r] != nums[w - 1]:\n            nums[w] = nums[r]\n            w += 1\n    return w"],
+  "trace":{"input":[[1,1,2,2,3]],"code":"def remove_duplicates(nums):\n    if not nums:\n        return 0\n    w = 1\n    for r in range(1, len(nums)):\n        if nums[r] != nums[w - 1]:\n            nums[w] = nums[r]\n            w += 1\n    return w\n","viz":{"kind":"array","arr":"nums","ptr":{"r":"r","w":"w"},"shadeTo":"w","stats":[]}},
+  "mcqs":[
+    {"q":"What does the write pointer w represent?","options":["The number of duplicates found","The length of the unique prefix built so far","The last index read","Half the array length"],"correct":1,"explain":"Everything before w is already the deduplicated result, so w is also the count to return."},
+    {"q":"Why is one forward pass enough?","options":["The array is sorted, so equal values sit next to each other","The array is small","Python sets are fast","We sort it first"],"correct":0,"explain":"Duplicates are adjacent in sorted input, so comparing to the previous kept value is sufficient."},
+    {"q":"Extra space used?","options":["O(n)","O(log n)","O(1)","O(k)"],"correct":2,"explain":"Only the integer indices w and r; the array is mutated in place."}]
+},
+{
+  "id":"max-sum-subarray-k","title":"Max Sum Subarray of Size K","chapter":"Sliding window (fixed size)",
+  "difficulty":"Easy","func":"max_sum_subarray",
+  "desc":"<p>Given an integer array <code>nums</code> and an integer <code>k</code>, return the largest possible sum of a contiguous block of exactly <code>k</code> elements.</p><ul><li>Assume <code>1 &lt;= k &lt;= len(nums)</code>.</li><li>Target O(n) — do not recompute each window from scratch.</li></ul>",
+  "examples":[{"i":"max_sum_subarray([2,1,5,1,3,2], 3)","o":"9   (5 + 1 + 3)"},{"i":"max_sum_subarray([2,3,4,1,5], 2)","o":"7   (3 + 4)"}],
+  "starter":"def max_sum_subarray(nums, k):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[[2,1,5,1,3,2],3],"expected":9},
+    {"input":[[2,3,4,1,5],2],"expected":7},
+    {"input":[[-1,-2,-3,-4],1],"expected":-1},
+    {"input":[[4,4,4,4],2],"expected":8}],
+  "hints":[
+    "Pattern: Sliding window (fixed size).",
+    "Sum the first k elements, then slide: add the entering element and subtract the leaving one, tracking the max.",
+    "def max_sum_subarray(nums, k):\n    window = sum(nums[:k])\n    best = window\n    for i in range(k, len(nums)):\n        window += nums[i] - nums[i - k]\n        best = max(best, window)\n    return best"],
+  "trace":{"input":[[2,1,5,1,3,2],3],"viz":{"kind":"array","arr":"nums","slideEnd":"i","klen":"k","stats":["window","best"]}},
+  "mcqs":[
+    {"q":"After the first window is summed, each slide costs how much work?","options":["O(k)","O(1)","O(n)","O(log k)"],"correct":1,"explain":"One addition and one subtraction move the window by a step."},
+    {"q":"The slide update is:","options":["window += nums[i]","window += nums[i] - nums[i - k]","window = sum(nums[i-k:i])","window *= nums[i]"],"correct":1,"explain":"Add the new right-end element, remove the element that just fell off the left."},
+    {"q":"Overall complexity?","options":["O(n*k)","O(n log n)","O(n)","O(k^2)"],"correct":2,"explain":"One initial O(k) sum plus O(1) per remaining position."}]
+},
+{
+  "id":"longest-unique-substring","title":"Longest Substring Without Repeating Characters","chapter":"Sliding window (variable size)",
+  "difficulty":"Medium","func":"longest_unique_substring",
+  "desc":"<p>Return the length of the longest contiguous substring of <code>s</code> in which no character repeats.</p><ul><li><code>s</code> may contain letters, digits, symbols or spaces.</li><li>Target O(n) time.</li></ul>",
+  "examples":[{"i":"longest_unique_substring(\"abcabcbb\")","o":"3   (\"abc\")"},{"i":"longest_unique_substring(\"pwwkew\")","o":"3   (\"wke\")"}],
+  "starter":"def longest_unique_substring(s):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":["abcabcbb"],"expected":3},
+    {"input":["pwwkew"],"expected":3},
+    {"input":[""],"expected":0},
+    {"input":["bbbbb"],"expected":1},
+    {"input":["dvdf"],"expected":3}],
+  "hints":[
+    "Pattern: Sliding window (variable size).",
+    "Expand the right edge; when the new character was already seen inside the window, jump the left edge to just past its previous position.",
+    "def longest_unique_substring(s):\n    seen = {}\n    start = 0\n    best = 0\n    for i, ch in enumerate(s):\n        if ch in seen and seen[ch] >= start:\n            start = seen[ch] + 1\n        seen[ch] = i\n        best = max(best, i - start + 1)\n    return best"],
+  "trace":{"input":["abcabb"],"viz":{"kind":"array","arr":"s","win":{"lo":"start","hi":"i"},"dict":"seen","stats":["best"]}},
+  "mcqs":[
+    {"q":"On seeing a character already inside the window, start moves to:","options":["0","one past that character's previous index","start + 1","i"],"correct":1,"explain":"That is the shortest jump that removes the duplicate from the window."},
+    {"q":"Why the check seen[ch] >= start?","options":["To skip whitespace","To ignore a previous occurrence that already fell outside the window","To count characters","To reset the dict"],"correct":1,"explain":"A stale index before start is irrelevant and must not drag the window backwards."},
+    {"q":"Space complexity?","options":["O(1) always","O(n^2)","O(min(n, alphabet size))","O(n log n)"],"correct":2,"explain":"The map holds at most one entry per distinct character."}]
+},
+{
+  "id":"min-subarray-len","title":"Minimum Size Subarray Sum","chapter":"Sliding window (variable size)",
+  "difficulty":"Medium","func":"min_subarray_len",
+  "desc":"<p>Given a positive integer <code>target</code> and an array <code>nums</code> of <b>positive</b> integers, return the length of the shortest contiguous subarray whose sum is <code>&gt;= target</code>. If no such subarray exists, return <code>0</code>.</p><ul><li>All values are &gt; 0 — this is what lets the window shrink safely.</li></ul>",
+  "examples":[{"i":"min_subarray_len(7, [2,3,1,2,4,3])","o":"2   ([4, 3])"},{"i":"min_subarray_len(4, [1,4,4])","o":"1   ([4])"}],
+  "starter":"def min_subarray_len(target, nums):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[7,[2,3,1,2,4,3]],"expected":2},
+    {"input":[4,[1,4,4]],"expected":1},
+    {"input":[11,[1,1,1,1,1,1,1,1]],"expected":0},
+    {"input":[15,[1,2,3,4,5]],"expected":5}],
+  "hints":[
+    "Pattern: Sliding window (variable size).",
+    "Extend the right edge adding to a running sum; while the sum is >= target, record the width and drop elements from the left.",
+    "def min_subarray_len(target, nums):\n    left = 0\n    total = 0\n    best = float('inf')\n    for right in range(len(nums)):\n        total += nums[right]\n        while total >= target:\n            best = min(best, right - left + 1)\n            total -= nums[left]\n            left += 1\n    return 0 if best == float('inf') else best"],
+  "trace":{"input":[7,[2,3,1,2,4,3]],"viz":{"kind":"array","arr":"nums","win":{"lo":"left","hi":"right"},"stats":["total","best"]}},
+  "mcqs":[
+    {"q":"The inner while loop shrinks the window while:","options":["total < target","total >= target","left < right","right < len(nums)"],"correct":1,"explain":"As long as the sum still qualifies, a shorter window might also qualify."},
+    {"q":"Return value when nothing qualifies?","options":["-1","0","len(nums)","float('inf')"],"correct":1,"explain":"best stays at infinity and is converted to 0."},
+    {"q":"Does this approach work if nums can contain negatives?","options":["Yes, unchanged","No — shrinking the window can wrongly drop a needed negative and the monotonic-sum assumption breaks","Only if target is negative","Only for even-length arrays"],"correct":1,"explain":"With negatives, removing a left element can increase the sum, so the shrink step is no longer safe."}]
+},
+{
+  "id":"contains-duplicate","title":"Contains Duplicate","chapter":"Hashmap, one-pass",
+  "difficulty":"Easy","func":"contains_duplicate",
+  "desc":"<p>Return <code>True</code> if any value appears at least twice in <code>nums</code>, and <code>False</code> if every value is distinct.</p>",
+  "examples":[{"i":"contains_duplicate([1,2,3,1])","o":"True"},{"i":"contains_duplicate([1,2,3,4])","o":"False"}],
+  "starter":"def contains_duplicate(nums):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[[1,2,3,1]],"expected":true},
+    {"input":[[1,2,3,4]],"expected":false},
+    {"input":[[]],"expected":false},
+    {"input":[[1,1,1,3,3,4,3,2,4,2]],"expected":true}],
+  "hints":[
+    "Pattern: Hashmap, one-pass.",
+    "Add each value to a set; if it is already present you have found a duplicate.",
+    "def contains_duplicate(nums):\n    seen = set()\n    for x in nums:\n        if x in seen:\n            return True\n        seen.add(x)\n    return False"],
+  "trace":{"input":[[1,2,3,1]],"code":"def contains_duplicate(nums):\n    seen = set()\n    for i in range(len(nums)):\n        if nums[i] in seen:\n            return True\n        seen.add(nums[i])\n    return False\n","viz":{"kind":"hash","arr":"nums","pos":"i","dict":"seen"}},
+  "mcqs":[
+    {"q":"Which structure gives O(1) average membership checks here?","options":["list","set","tuple","string"],"correct":1,"explain":"A hash set answers 'have I seen this?' in average constant time."},
+    {"q":"Why return as soon as a repeat is found?","options":["To save memory","The answer cannot change once one duplicate exists","To avoid recursion","Sets forbid more inserts"],"correct":1,"explain":"One collision already proves the result is True."},
+    {"q":"Worst-case complexity?","options":["O(n) time, O(n) space","O(n^2) time, O(1) space","O(n log n) time, O(n) space","O(1) time, O(n) space"],"correct":0,"explain":"Every element may be inserted once before an answer is known."}]
+},
+{
+  "id":"two-sum","title":"Two Sum (unsorted)","chapter":"Hashmap, one-pass",
+  "difficulty":"Easy","func":"two_sum",
+  "desc":"<p>Given an <b>unsorted</b> array <code>nums</code> and an integer <code>target</code>, return the 0-based indices of the two entries that sum to <code>target</code>.</p><ul><li>Exactly one answer exists; the order of the two indices does not matter.</li><li>Target O(n) time.</li></ul>",
+  "examples":[{"i":"two_sum([2,7,11,15], 9)","o":"[0, 1]"},{"i":"two_sum([3,2,4], 6)","o":"[1, 2]"}],
+  "starter":"def two_sum(nums, target):\n    pass\n",
+  "opts":{"compare":"sorted_list"},"visible":2,
+  "tests":[
+    {"input":[[2,7,11,15],9],"expected":[0,1]},
+    {"input":[[3,2,4],6],"expected":[1,2]},
+    {"input":[[3,3],6],"expected":[0,1]},
+    {"input":[[-3,4,3,90],0],"expected":[0,2]}],
+  "hints":[
+    "Pattern: Hashmap, one-pass.",
+    "Store each value's index as you go; for the current value check whether its complement (target - value) is already in the map.",
+    "def two_sum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        if target - x in seen:\n            return [seen[target - x], i]\n        seen[x] = i\n    return []"],
+  "trace":{"input":[[2,7,11,15],9],"viz":{"kind":"hash","arr":"nums","pos":"i","cur":"x","dict":"seen"}},
+  "mcqs":[
+    {"q":"What are the keys and values in seen?","options":["index -> value","value -> index","value -> value","index -> index"],"correct":1,"explain":"We look values up to recover the index where they occurred."},
+    {"q":"What condition triggers a return?","options":["x in seen","target - x in seen","x == target","i == len(nums)"],"correct":1,"explain":"If the complement was already stored, the pair is complete."},
+    {"q":"Why does a single pass suffice?","options":["The array is sorted","We only ever need a partner that appeared earlier","Dicts keep insertion order","target is positive"],"correct":1,"explain":"By the time we reach the second member of the pair, the first is already recorded."}]
+},
+{
+  "id":"first-unique-char","title":"First Unique Character","chapter":"Hashmap, two-pass",
+  "difficulty":"Easy","func":"first_unique_char",
+  "desc":"<p>Return the index of the first character in <code>s</code> that appears exactly once. If there is no such character, return <code>-1</code>.</p>",
+  "examples":[{"i":"first_unique_char(\"leetcode\")","o":"0   ('l')"},{"i":"first_unique_char(\"loveleetcode\")","o":"2   ('v')"}],
+  "starter":"def first_unique_char(s):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":["leetcode"],"expected":0},
+    {"input":["loveleetcode"],"expected":2},
+    {"input":["aabb"],"expected":-1},
+    {"input":["z"],"expected":0}],
+  "hints":[
+    "Pattern: Hashmap, two-pass.",
+    "Pass one counts every character; pass two returns the index of the first character whose count is 1.",
+    "def first_unique_char(s):\n    counts = {}\n    for ch in s:\n        counts[ch] = counts.get(ch, 0) + 1\n    for i, ch in enumerate(s):\n        if counts[ch] == 1:\n            return i\n    return -1"],
+  "trace":{"input":["aabc"],"code":"def first_unique_char(s):\n    counts = {}\n    for i in range(len(s)):\n        counts[s[i]] = counts.get(s[i], 0) + 1\n    for i in range(len(s)):\n        if counts[s[i]] == 1:\n            return i\n    return -1\n","viz":{"kind":"hash","arr":"s","pos":"i","dict":"counts"}},
+  "mcqs":[
+    {"q":"What does pass one build?","options":["A sorted string","A frequency map of characters","A set of vowels","The answer directly"],"correct":1,"explain":"counts[ch] holds how many times ch occurs."},
+    {"q":"Why can't this be a single pass?","options":["Dicts are unordered","You cannot know a character is unique until the whole string is scanned","Strings are immutable","It would use more memory"],"correct":1,"explain":"A later duplicate can disqualify an early character."},
+    {"q":"Total complexity for a length-n string over a fixed alphabet?","options":["O(n^2)","O(n)","O(n log n)","O(2^n)"],"correct":1,"explain":"Two linear scans; the map is bounded by the alphabet size."}]
+},
+{
+  "id":"group-anagrams","title":"Group Anagrams","chapter":"Hashmap, canonical-key grouping",
+  "difficulty":"Medium","func":"group_anagrams",
+  "desc":"<p>Given a list of strings <code>words</code>, group the entries that are anagrams of one another. Return a list of groups. The order of the groups and the order of words inside a group do not matter.</p>",
+  "examples":[{"i":"group_anagrams([\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"])","o":"[[\"bat\"], [\"nat\",\"tan\"], [\"ate\",\"eat\",\"tea\"]]"}],
+  "starter":"def group_anagrams(words):\n    pass\n",
+  "opts":{"compare":"nested_set"},"visible":2,
+  "tests":[
+    {"input":[["eat","tea","tan","ate","nat","bat"]],"expected":[["eat","tea","ate"],["tan","nat"],["bat"]]},
+    {"input":[[""]],"expected":[[""]]},
+    {"input":[["a"]],"expected":[["a"]]},
+    {"input":[["abc","cba","xyz","zxy","foo"]],"expected":[["abc","cba"],["xyz","zxy"],["foo"]]}],
+  "hints":[
+    "Pattern: Hashmap, canonical-key grouping.",
+    "Map every word to a canonical key (its letters sorted) and append it to the bucket for that key.",
+    "def group_anagrams(words):\n    groups = {}\n    for w in words:\n        key = ''.join(sorted(w))\n        groups.setdefault(key, []).append(w)\n    return list(groups.values())"],
+  "trace":{"input":[["eat","tea","tan","ate"]],"code":"def group_anagrams(words):\n    groups = {}\n    for i in range(len(words)):\n        w = words[i]\n        key = ''.join(sorted(w))\n        groups.setdefault(key, []).append(w)\n    return list(groups.values())\n","viz":{"kind":"hash","arr":"words","pos":"i","cur":"w","dict":"groups"}},
+  "mcqs":[
+    {"q":"What is the canonical key for a word?","options":["Its length","Its first letter","Its letters sorted","Its reversed form"],"correct":2,"explain":"Two words are anagrams exactly when their sorted letters match."},
+    {"q":"Cost of building the key for a word of length k?","options":["O(1)","O(k)","O(k log k)","O(k^2)"],"correct":2,"explain":"Sorting k characters dominates."},
+    {"q":"An alternative key that also works:","options":["A 26-length letter-count tuple","The word's hash only","A random id","The word uppercased"],"correct":0,"explain":"A per-letter frequency signature identifies anagrams in O(k)."}]
+},
+{
+  "id":"binary-search","title":"Binary Search","chapter":"Binary search",
+  "difficulty":"Easy","func":"binary_search",
+  "desc":"<p>Given a list <code>nums</code> sorted in strictly ascending order and a value <code>target</code>, return the index of <code>target</code>, or <code>-1</code> if it is absent.</p><ul><li>Required time: O(log n).</li></ul>",
+  "examples":[{"i":"binary_search([-1,0,3,5,9,12], 9)","o":"4"},{"i":"binary_search([-1,0,3,5,9,12], 2)","o":"-1"}],
+  "starter":"def binary_search(nums, target):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[[-1,0,3,5,9,12],9],"expected":4},
+    {"input":[[-1,0,3,5,9,12],2],"expected":-1},
+    {"input":[[],1],"expected":-1},
+    {"input":[[5],5],"expected":0},
+    {"input":[[1,2,3,4,5],1],"expected":0}],
+  "hints":[
+    "Pattern: Binary search.",
+    "Maintain lo/hi bounds; compare the midpoint to the target and discard the half that cannot hold it.",
+    "def binary_search(nums, target):\n    lo, hi = 0, len(nums) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1"],
+  "trace":{"input":[[-1,0,3,5,9,12],9],"viz":{"kind":"array","arr":"nums","ptr":{"lo":"lo","mid":"mid","hi":"hi"},"stats":[]}},
+  "mcqs":[
+    {"q":"Loop condition for this closed-interval version?","options":["lo < hi","lo <= hi","lo != hi","mid < hi"],"correct":1,"explain":"When lo == hi there is still one unchecked element."},
+    {"q":"If nums[mid] < target, then:","options":["hi = mid - 1","lo = mid + 1","return mid","lo = mid"],"correct":1,"explain":"Everything at or left of mid is too small."},
+    {"q":"Complexity?","options":["O(n)","O(log n)","O(n log n)","O(1)"],"correct":1,"explain":"The search space halves each iteration."}]
+},
+{
+  "id":"max-subarray","title":"Maximum Subarray (Kadane's)","chapter":"Kadane's / running-total single pass",
+  "difficulty":"Medium","func":"max_subarray",
+  "desc":"<p>Return the largest sum obtainable from a contiguous, non-empty block of <code>nums</code>. Values may be negative.</p><ul><li>Target O(n) time, O(1) space.</li></ul>",
+  "examples":[{"i":"max_subarray([-2,1,-3,4,-1,2,1,-5,4])","o":"6   ([4, -1, 2, 1])"},{"i":"max_subarray([5,4,-1,7,8])","o":"23"}],
+  "starter":"def max_subarray(nums):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[[-2,1,-3,4,-1,2,1,-5,4]],"expected":6},
+    {"input":[[5,4,-1,7,8]],"expected":23},
+    {"input":[[-1,-2,-3]],"expected":-1},
+    {"input":[[1]],"expected":1}],
+  "hints":[
+    "Pattern: Kadane's / running-total single pass.",
+    "For each element keep the best sum of a subarray ending here: extend the previous one or start over at this element. Track the global best.",
+    "def max_subarray(nums):\n    best = cur = nums[0]\n    for x in nums[1:]:\n        cur = max(x, cur + x)\n        best = max(best, cur)\n    return best"],
+  "trace":{"input":[[-2,1,-3,4,-1,2,1]],"code":"def max_subarray(nums):\n    best = cur = nums[0]\n    for i in range(1, len(nums)):\n        cur = max(nums[i], cur + nums[i])\n        best = max(best, cur)\n    return best\n","viz":{"kind":"array","arr":"nums","slidePos":"i","stats":["cur","best"]}},
+  "mcqs":[
+    {"q":"cur = max(x, cur + x) means:","options":["Always extend the current run","Extend the previous run, or restart at x, whichever is larger","Take the average","Reset to zero"],"correct":1,"explain":"If the running sum has gone negative it is better to start fresh at x."},
+    {"q":"Why track best separately from cur?","options":["cur can be negative","The best subarray may end before the array does","To save memory","best is the length"],"correct":1,"explain":"cur only describes runs ending at the current index; the answer might have ended earlier."},
+    {"q":"Complexity?","options":["O(n) time, O(1) space","O(n^2) time","O(n log n) time","O(n) space"],"correct":0,"explain":"One pass, two scalars."}]
+},
+{
+  "id":"max-profit","title":"Best Time to Buy and Sell Stock","chapter":"Kadane's / running-total single pass",
+  "difficulty":"Easy","func":"max_profit",
+  "desc":"<p><code>prices[i]</code> is the price of a stock on day <code>i</code>. Choose one day to buy and a later day to sell. Return the maximum profit, or <code>0</code> if no profitable pair exists.</p>",
+  "examples":[{"i":"max_profit([7,1,5,3,6,4])","o":"5   (buy 1, sell 6)"},{"i":"max_profit([7,6,4,3,1])","o":"0"}],
+  "starter":"def max_profit(prices):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":[[7,1,5,3,6,4]],"expected":5},
+    {"input":[[7,6,4,3,1]],"expected":0},
+    {"input":[[1,2]],"expected":1},
+    {"input":[[2,4,1]],"expected":2}],
+  "hints":[
+    "Pattern: Kadane's / running-total single pass.",
+    "Sweep once, tracking the lowest price so far and the best profit achievable by selling today.",
+    "def max_profit(prices):\n    lowest = float('inf')\n    best = 0\n    for p in prices:\n        lowest = min(lowest, p)\n        best = max(best, p - lowest)\n    return best"],
+  "trace":{"input":[[7,1,5,3,6,4]],"code":"def max_profit(prices):\n    lowest = float('inf')\n    best = 0\n    for i in range(len(prices)):\n        lowest = min(lowest, prices[i])\n        best = max(best, prices[i] - lowest)\n    return best\n","viz":{"kind":"array","arr":"prices","slidePos":"i","stats":["lowest","best"]}},
+  "mcqs":[
+    {"q":"What does lowest track?","options":["The current day's price","The minimum price seen so far","The maximum price","The average price"],"correct":1,"explain":"Selling today is best paired with the cheapest earlier day."},
+    {"q":"Profit candidate on day i:","options":["prices[i] - lowest","lowest - prices[i]","prices[i] + lowest","prices[i]"],"correct":0,"explain":"Sell price minus the best buy price seen up to now."},
+    {"q":"If prices strictly decrease every day, the answer is:","options":["negative","0","the first price","the last price"],"correct":1,"explain":"No profitable pair exists, so best never leaves 0."}]
+},
+{
+  "id":"valid-parentheses","title":"Valid Parentheses","chapter":"Stack",
+  "difficulty":"Easy","func":"is_valid",
+  "desc":"<p>Given a string <code>s</code> containing only the characters <code>()[]{}</code>, return <code>True</code> if every bracket is closed by a bracket of the same type and in the correct nesting order.</p><ul><li>The empty string is valid.</li></ul>",
+  "examples":[{"i":"is_valid(\"()[]{}\")","o":"True"},{"i":"is_valid(\"([)]\")","o":"False"}],
+  "starter":"def is_valid(s):\n    pass\n",
+  "opts":{"compare":"eq"},"visible":2,
+  "tests":[
+    {"input":["()[]{}"],"expected":true},
+    {"input":["([)]"],"expected":false},
+    {"input":["{[]}"],"expected":true},
+    {"input":["("],"expected":false},
+    {"input":[""],"expected":true}],
+  "hints":[
+    "Pattern: Stack.",
+    "Push each opening bracket; on a closing bracket the top of the stack must be its matching opener.",
+    "def is_valid(s):\n    pairs = {')': '(', ']': '[', '}': '{'}\n    stack = []\n    for ch in s:\n        if ch in '([{':\n            stack.append(ch)\n        elif ch in pairs:\n            if not stack or stack.pop() != pairs[ch]:\n                return False\n    return not stack"],
+  "trace":{"input":["([])"],"code":"def is_valid(s):\n    pairs = {')': '(', ']': '[', '}': '{'}\n    stack = []\n    for i in range(len(s)):\n        ch = s[i]\n        if ch in '([{':\n            stack.append(ch)\n        elif ch in pairs:\n            if not stack or stack.pop() != pairs[ch]:\n                return False\n    return not stack\n","viz":{"kind":"stack","arr":"s","pos":"i","stack":"stack"}},
+  "mcqs":[
+    {"q":"On an opening bracket the algorithm:","options":["pops the stack","pushes it on the stack","returns False","ignores it"],"correct":1,"explain":"It must be matched later, so remember it."},
+    {"q":"On a closing bracket it:","options":["pushes it","pops and checks the popped opener matches","clears the stack","counts it"],"correct":1,"explain":"The most recent unmatched opener must be the correct type."},
+    {"q":"The string is valid only if, at the end:","options":["the stack is empty","the stack has one item","s is non-empty","no pops happened"],"correct":0,"explain":"Leftover openers mean something was never closed."}]
+},
+{
+  "id":"reverse-linked-list","title":"Reverse Linked List","chapter":"Linked list — three-pointer reversal",
+  "difficulty":"Easy","func":"reverse_list",
+  "desc":"<p>Reverse a singly linked list and return the new head.</p><ul><li>The grader passes a plain Python list; the site turns it into real <code>ListNode</code> objects before your function runs and turns your returned list back for checking. You only write pointer logic.</li><li>Each node has <code>.val</code> and <code>.next</code>.</li><li>Target O(n) time, O(1) space (iterative).</li></ul>",
+  "examples":[{"i":"reverse_list([1,2,3,4,5])","o":"[5, 4, 3, 2, 1]"},{"i":"reverse_list([1,2])","o":"[2, 1]"}],
+  "starter":"# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\n\ndef reverse_list(head):\n    pass\n",
+  "opts":{"arg_transform":"linked","result_transform":"linked"},"visible":2,
+  "tests":[
+    {"input":[[1,2,3,4,5]],"expected":[5,4,3,2,1]},
+    {"input":[[1,2]],"expected":[2,1]},
+    {"input":[[]],"expected":[]},
+    {"input":[[7]],"expected":[7]}],
+  "hints":[
+    "Pattern: Linked list — three-pointer reversal.",
+    "Walk the list, re-pointing each node's next to the node before it, carrying prev, cur and a saved nxt.",
+    "def reverse_list(head):\n    prev = None\n    cur = head\n    while cur:\n        nxt = cur.next\n        cur.next = prev\n        prev = cur\n        cur = nxt\n    return prev"],
+  "trace":{"input":[[1,2,3,4]],"opts":{"arg_transform":"linked"},"viz":{"kind":"llrev","probe":["prev","cur","nxt"]}},
+  "mcqs":[
+    {"q":"Why store nxt before the re-pointing line?","options":["To count nodes","cur.next is about to be overwritten and we still need the rest of the list","To reverse twice","nxt is the answer"],"correct":1,"explain":"Once cur.next = prev runs, the original forward link is gone."},
+    {"q":"What is returned?","options":["head","cur","prev","nxt"],"correct":2,"explain":"When cur falls off the end, prev points at the last node processed — the new head."},
+    {"q":"Iterative reversal uses how much extra space?","options":["O(n)","O(1)","O(log n)","O(n^2)"],"correct":1,"explain":"Three pointers, regardless of list length."}]
+},
+{
+  "id":"middle-of-linked-list","title":"Middle of the Linked List","chapter":"Linked list — slow/fast pointers",
+  "difficulty":"Easy","func":"middle_node",
+  "desc":"<p>Return the middle node of a singly linked list. If the list has an even number of nodes, return the <b>second</b> of the two middle nodes.</p><ul><li>The grader passes a plain list and compares against the plain list starting at the node you return.</li></ul>",
+  "examples":[{"i":"middle_node([1,2,3,4,5])","o":"[3, 4, 5]"},{"i":"middle_node([1,2,3,4,5,6])","o":"[4, 5, 6]"}],
+  "starter":"# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\n\ndef middle_node(head):\n    pass\n",
+  "opts":{"arg_transform":"linked","result_transform":"linked"},"visible":2,
+  "tests":[
+    {"input":[[1,2,3,4,5]],"expected":[3,4,5]},
+    {"input":[[1,2,3,4,5,6]],"expected":[4,5,6]},
+    {"input":[[1]],"expected":[1]},
+    {"input":[[1,2]],"expected":[2]}],
+  "hints":[
+    "Pattern: Linked list — slow/fast pointers.",
+    "Move slow by one and fast by two; when fast runs off the end, slow sits on the middle.",
+    "def middle_node(head):\n    slow = fast = head\n    while fast and fast.next:\n        slow = slow.next\n        fast = fast.next.next\n    return slow"],
+  "trace":{"input":[[1,2,3,4,5]],"opts":{"arg_transform":"linked","probe_index":{"slow":"head","fast":"head"}},"viz":{"kind":"llptr"}},
+  "mcqs":[
+    {"q":"Per iteration, fast advances:","options":["1 node","2 nodes","half the list","to the end"],"correct":1,"explain":"fast = fast.next.next."},
+    {"q":"The loop stops when:","options":["slow reaches the end","fast or fast.next is None","slow == fast","the list is sorted"],"correct":1,"explain":"That is exactly when fast has consumed the list."},
+    {"q":"For an even-length list this returns:","options":["the first middle","the second middle","the head","the tail"],"correct":1,"explain":"slow takes one extra step compared to the first-middle variant."}]
+},
+{
+  "id":"linked-list-cycle","title":"Linked List Cycle","chapter":"Linked list — slow/fast pointers",
+  "difficulty":"Easy","func":"has_cycle",
+  "desc":"<p>Return <code>True</code> if the linked list contains a cycle.</p><ul><li>The grader passes <code>head</code> as a plain list plus <code>pos</code>, the index the tail's <code>next</code> is wired to (<code>-1</code> means no cycle). The site builds that structure for you.</li><li>Target O(1) extra space.</li></ul>",
+  "examples":[{"i":"has_cycle([3,2,0,-4], pos=1)","o":"True"},{"i":"has_cycle([1], pos=-1)","o":"False"}],
+  "starter":"# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\n\ndef has_cycle(head):\n    pass\n",
+  "opts":{"arg_transform":"cycle"},"visible":2,
+  "tests":[
+    {"input":[[3,2,0,-4],1],"expected":true},
+    {"input":[[1],-1],"expected":false},
+    {"input":[[1,2],0],"expected":true},
+    {"input":[[],-1],"expected":false}],
+  "hints":[
+    "Pattern: Linked list — slow/fast pointers.",
+    "Advance slow by one and fast by two; if they ever land on the same node there is a cycle, if fast hits the end there is not.",
+    "def has_cycle(head):\n    slow = fast = head\n    while fast and fast.next:\n        slow = slow.next\n        fast = fast.next.next\n        if slow is fast:\n            return True\n    return False"],
+  "trace":{"input":[[3,2,0,-4],1],"opts":{"arg_transform":"cycle","probe_index":{"slow":"head","fast":"head"}},"viz":{"kind":"llptr","cycle":true}},
+  "mcqs":[
+    {"q":"A cycle is detected precisely when:","options":["fast becomes None","slow and fast point at the same node","slow reaches index pos","the list is long"],"correct":1,"explain":"In a loop the faster pointer laps the slower one and they collide."},
+    {"q":"If fast reaches None (or fast.next is None):","options":["there is a cycle","there is no cycle","restart","undefined"],"correct":1,"explain":"A terminating pointer means the list has an end."},
+    {"q":"Extra space used?","options":["O(n) for a visited set","O(1)","O(log n)","O(n^2)"],"correct":1,"explain":"Floyd's two-pointer method needs no auxiliary structure."}]
+},
+{
+  "id":"subsets","title":"Subsets","chapter":"Recursion/backtracking",
+  "difficulty":"Medium","func":"subsets",
+  "desc":"<p>Return every subset (the power set) of the distinct integers in <code>nums</code>. The order of the subsets, and of the elements inside each subset, does not matter.</p><ul><li>For <code>n</code> elements there are <code>2^n</code> subsets.</li></ul>",
+  "examples":[{"i":"subsets([1,2])","o":"[[], [1], [2], [1,2]]"},{"i":"subsets([1,2,3])","o":"8 subsets"}],
+  "starter":"def subsets(nums):\n    pass\n",
+  "opts":{"compare":"nested_set"},"visible":2,
+  "tests":[
+    {"input":[[1,2,3]],"expected":[[],[1],[2],[3],[1,2],[1,3],[2,3],[1,2,3]]},
+    {"input":[[1,2]],"expected":[[],[1],[2],[1,2]]},
+    {"input":[[0]],"expected":[[],[0]]},
+    {"input":[[4,5,6]],"expected":[[],[4],[5],[6],[4,5],[4,6],[5,6],[4,5,6]]}],
+  "hints":[
+    "Pattern: Recursion/backtracking.",
+    "Recurse over a start index: record the current path, then for each later index add that element, recurse, and remove it.",
+    "def subsets(nums):\n    result = []\n    def backtrack(start, path):\n        result.append(path[:])\n        for i in range(start, len(nums)):\n            path.append(nums[i])\n            backtrack(i + 1, path)\n            path.pop()\n    backtrack(0, [])\n    return result"],
+  "trace":{"input":[[1,2,3]],"viz":{"kind":"tree","path":"path","result":"result","start":"start"}},
+  "mcqs":[
+    {"q":"At each index the recursion branches on:","options":["sort or not","include this element or skip it","forward or backward","even or odd"],"correct":1,"explain":"Every element is independently in or out, giving 2^n leaves."},
+    {"q":"Why append path[:] rather than path?","options":["Speed","path is mutated later by backtracking, so a copy freezes the current state","path is read-only","To sort it"],"correct":1,"explain":"Without the copy every stored subset would end up identical (and empty)."},
+    {"q":"Number of subsets and total output size for n elements?","options":["n subsets, O(n)","2^n subsets, O(n * 2^n)","n^2 subsets","n! subsets"],"correct":1,"explain":"2^n subsets averaging n/2 elements each."}]
+}
+]
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var PROBLEMS = JSON.parse(document.getElementById('problems-src').textContent);
+  var PY_TEXT = document.getElementById('py-src').textContent;
+  var WORKER_TEXT = document.getElementById('worker-src').textContent;
+
+  var CHAPTERS = [
+    "Two-pointer (opposite ends)",
+    "Two-pointer (same-direction read/write)",
+    "Sliding window (fixed size)",
+    "Sliding window (variable size)",
+    "Hashmap, one-pass",
+    "Hashmap, two-pass",
+    "Hashmap, canonical-key grouping",
+    "Binary search",
+    "Kadane's / running-total single pass",
+    "Stack",
+    "Linked list — three-pointer reversal",
+    "Linked list — slow/fast pointers",
+    "Recursion/backtracking"
+  ];
+  PROBLEMS.forEach(function(p, i){ p.num = i + 1; });
+
+  // ---------------- storage ----------------
+  var mem = {};
+  var store = {
+    get: function(k){ try { return localStorage.getItem(k); } catch(e){ return (k in mem) ? mem[k] : null; } },
+    set: function(k, v){ mem[k] = v; try { localStorage.setItem(k, v); } catch(e){} }
+  };
+  function stars(id){
+    try { return JSON.parse(store.get('lc_stars_' + id) || '{}'); } catch(e){ return {}; }
+  }
+  function starCount(id){ var s = stars(id); return (s.viz?1:0) + (s.code?1:0) + (s.concept?1:0); }
+  function grantStar(id, which){
+    var s = stars(id);
+    if(s[which]) return false;
+    s[which] = true;
+    store.set('lc_stars_' + id, JSON.stringify(s));
+    return true;
+  }
+  function totalStars(){ return PROBLEMS.reduce(function(a, p){ return a + starCount(p.id); }, 0); }
+  function missionsCleared(){ return PROBLEMS.filter(function(p){ return starCount(p.id) === 3; }).length; }
+  var LScode = {
+    get: function(id){ return store.get('lc_code_' + id); },
+    set: function(id, v){ store.set('lc_code_' + id, v); }
+  };
+  // migrate old solved list -> code star
+  (function(){
+    try {
+      var old = JSON.parse(store.get('lc_solved') || '[]');
+      old.forEach(function(id){ grantStar(id, 'code'); });
+    } catch(e){}
+  })();
+
+  // ---------------- theme ----------------
+  function theme(){ return store.get('lc_theme') || 'dark'; }
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('btn-theme').textContent = (t === 'dark') ? 'Light' : 'Dark';
+    if(editor) editor.setOption('theme', t === 'dark' ? 'material-darker' : 'default');
+    if(replayCM) replayCM = null;
+  }
+  document.getElementById('btn-theme').addEventListener('click', function(){
+    var t = theme() === 'dark' ? 'light' : 'dark';
+    store.set('lc_theme', t); applyTheme(t);
+  });
+
+  // ---------------- runtime ----------------
+  var rtEl = document.getElementById('rt');
+  function setRt(t, c){ rtEl.textContent = t; rtEl.className = c || ''; }
+
+  var RT = (function(){
+    var url = null;
+    try {
+      var src = 'const PY_RUNNER = ' + JSON.stringify(PY_TEXT) + ';\n' + WORKER_TEXT;
+      url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    } catch(e){ url = null; }
+    var worker = null, pending = null, seq = 0, started = false;
+
+    function spawn(){
+      worker = new Worker(url);
+      worker.onmessage = function(e){
+        var m = e.data;
+        if(m.type === 'ready'){ setRt('Python ready', 'ok'); return; }
+        if(m.type === 'initerror'){ setRt('runtime failed', 'err'); return; }
+        if(m.type === 'result' && pending && m.jobId === pending.jobId){
+          clearTimeout(pending.timer);
+          var p = pending; pending = null; p.resolve(m.data);
+        }
+      };
+      worker.onerror = function(){
+        if(pending){ var p = pending; pending = null; clearTimeout(p.timer);
+          p.resolve({ compile_error: 'The Python runtime crashed. Check your connection and reload.' }); }
+        setRt('runtime error', 'err');
+      };
+      worker.postMessage({ type: 'init' });
+    }
+    function ensure(){ if(started) return; started = true; setRt('loading Python runtime…'); spawn(); }
+
+    function jobW(msg, timeoutMs){
+      ensure();
+      return new Promise(function(resolve){
+        var jobId = ++seq;
+        var timer = setTimeout(function(){
+          try { worker.terminate(); } catch(e){}
+          pending = null; setRt('loading Python runtime…'); spawn();
+          resolve({ timeout: true });
+        }, timeoutMs);
+        pending = { jobId: jobId, resolve: resolve, timer: timer };
+        msg.jobId = jobId; worker.postMessage(msg);
+      });
+    }
+
+    // main-thread fallback
+    var mtLoad = null, mtPy = null;
+    function loadScript(u){ return new Promise(function(res, rej){ var s = document.createElement('script'); s.src = u; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+    function ensureMain(){
+      if(mtLoad) return mtLoad;
+      started = true; setRt('loading Python runtime…');
+      mtLoad = (async function(){
+        await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');
+        mtPy = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
+        mtPy.runPython(PY_TEXT);
+        setRt('Python ready (no timeout guard)', 'ok');
+      })();
+      return mtLoad;
+    }
+    async function jobM(kind, msg){
+      try {
+        await ensureMain();
+        mtPy.globals.set('A', msg.code); mtPy.globals.set('B', msg.funcName);
+        if(kind === 'run'){
+          mtPy.globals.set('C', JSON.stringify(msg.cases)); mtPy.globals.set('D', JSON.stringify(msg.opts));
+          return JSON.parse(mtPy.runPython("json.dumps(run_all(A, B, json.loads(C), json.loads(D)))"));
+        } else {
+          mtPy.globals.set('C', JSON.stringify(msg.input)); mtPy.globals.set('D', JSON.stringify(msg.opts));
+          return JSON.parse(mtPy.runPython("json.dumps(trace_solution(A, B, json.loads(C), json.loads(D)))"));
+        }
+      } catch(err){ return { compile_error: String(err) }; }
+    }
+
+    var useWorker = !!url;
+    return {
+      warm: function(){ useWorker ? ensure() : ensureMain(); },
+      run: function(code, funcName, cases, opts){
+        var msg = { type: 'run', code: code, funcName: funcName, cases: cases, opts: opts || {} };
+        return useWorker ? jobW(msg, 9000) : jobM('run', msg);
+      },
+      trace: function(code, funcName, input, opts){
+        var msg = { type: 'trace', code: code, funcName: funcName, input: input, opts: opts || {} };
+        return useWorker ? jobW(msg, 12000) : jobM('trace', msg);
+      }
+    };
+  })();
+
+  // ---------------- helpers ----------------
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function el(html){ var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
+  function chapterProblems(ch){ return PROBLEMS.filter(function(p){ return p.chapter === ch; }); }
+  function starRow(id){
+    var n = starCount(id), out = '';
+    for(var i = 0; i < 3; i++) out += (i < n) ? '★' : '<span class="o">★</span>';
+    return out;
+  }
+
+  // ---------------- rail ----------------
+  var currentId = null;
+  function renderRail(){
+    var rail = document.getElementById('rail'), html = '';
+    CHAPTERS.forEach(function(ch, ci){
+      var list = chapterProblems(ch);
+      var got = list.reduce(function(a, p){ return a + starCount(p.id); }, 0);
+      html += '<div class="chap"><span>Ch ' + (ci + 1) + ' · ' + esc(ch) + '</span><span class="cs">' + got + '/' + (list.length * 3) + '</span></div>';
+      list.forEach(function(p){
+        html += '<div class="mrow ' + (starCount(p.id) === 3 ? 'done3 ' : '') + (p.id === currentId ? 'active' : '') + '" data-id="' + p.id + '">' +
+          '<span class="idx">' + p.num + '</span>' +
+          '<span class="mt"><span class="nm">' + esc(p.title) + '</span>' +
+          '<span class="st">' + starRow(p.id) + '</span></span>' +
+          '<span class="pill ' + p.difficulty.toLowerCase() + '">' + p.difficulty + '</span>' +
+        '</div>';
+      });
+    });
+    rail.innerHTML = html;
+    Array.prototype.forEach.call(rail.querySelectorAll('.mrow'), function(r){
+      r.addEventListener('click', function(){ openMission(r.getAttribute('data-id')); });
+    });
+    document.getElementById('hud-stars').textContent = totalStars();
+    document.getElementById('hud-missions').textContent = missionsCleared();
+  }
+
+  // ---------------- career landing ----------------
+  function renderCareer(){
+    currentId = null;
+    stopTimers();
+    var m = document.getElementById('main');
+    var cards = CHAPTERS.map(function(ch, ci){
+      var list = chapterProblems(ch);
+      var got = list.reduce(function(a, p){ return a + starCount(p.id); }, 0);
+      var max = list.length * 3;
+      var chips = list.map(function(p){
+        return '<span class="cchip" data-id="' + p.id + '">◆' + p.num + ' ' + esc(p.title) + ' <span class="s">' + starRow(p.id).replace(/<[^>]+>/g,'·') + '</span></span>';
+      }).join('');
+      return '<div class="ccard"><h3>Ch ' + (ci + 1) + ' — ' + esc(ch) + '</h3>' +
+        '<div class="cmeta">' + list.length + ' mission' + (list.length > 1 ? 's' : '') + ' · ' + got + ' / ' + max + ' stars</div>' +
+        '<div class="cbar"><i style="width:' + (max ? 100 * got / max : 0) + '%"></i></div>' +
+        '<div>' + chips + '</div></div>';
+    }).join('');
+    m.innerHTML = '<div class="scroll"><div class="career">' +
+      '<h1>CAREER</h1>' +
+      '<div class="sub">' + missionsCleared() + ' / 18 missions cleared · ' + totalStars() + ' / 54 stars. Each mission has 3 stages — Replay, Solve, Concept — one star each.</div>' +
+      '<div class="cgrid">' + cards + '</div></div></div>';
+    Array.prototype.forEach.call(m.querySelectorAll('.cchip'), function(c){
+      c.addEventListener('click', function(){ openMission(c.getAttribute('data-id')); });
+    });
+    renderRail();
+  }
+  document.getElementById('btn-home').addEventListener('click', renderCareer);
+
+  // ---------------- mission shell ----------------
+  var editor = null, replayCM = null, saveT = null;
+  var timerInt = null, timerStart = 0, playInt = null;
+  function stopTimers(){ clearInterval(timerInt); clearInterval(playInt); playInt = null; }
+
+  var activeStage = 'replay';
+  function openMission(id, stage){
+    var p = PROBLEMS.find(function(x){ return x.id === id; });
+    if(!p) return;
+    var switching = (id !== currentId);
+    currentId = id;
+    activeStage = stage || (switching ? 'replay' : activeStage);
+    RT.warm();
+    stopTimers();
+
+    var m = document.getElementById('main');
+    m.innerHTML =
+      '<div class="mhead">' +
+        '<div class="row1">' +
+          '<span class="mno">MISSION ' + String(p.num).padStart(2, '0') + '</span>' +
+          '<h2>' + esc(p.title) + '</h2>' +
+          '<span class="pill ' + p.difficulty.toLowerCase() + '">' + p.difficulty + '</span>' +
+          '<span class="stars" id="mstars">' + starRow(p.id) + '</span>' +
+          '<span class="timer" id="mtimer">00:00</span>' +
+        '</div>' +
+        '<div class="tabs" id="tabs">' +
+          tabBtn('replay', '1 · Replay', stars(p.id).viz) +
+          tabBtn('solve', '2 · Solve', stars(p.id).code) +
+          tabBtn('concept', '3 · Concept', stars(p.id).concept) +
+        '</div>' +
+      '</div>' +
+      '<div class="scroll" id="stageScroll"><div class="stage" id="stage"></div></div>';
+
+    document.querySelector('#tabs').addEventListener('click', function(e){
+      var t = e.target.closest('.tab'); if(!t) return;
+      activeStage = t.getAttribute('data-stage'); paintTabs(); renderStage(p);
+    });
+
+    if(switching || !timerStart) timerStart = Date.now();
+    timerInt = setInterval(function(){
+      var s = Math.floor((Date.now() - timerStart) / 1000);
+      var e = document.getElementById('mtimer');
+      if(e) e.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }, 1000);
+
+    paintTabs();
+    renderStage(p);
+    renderRail();
+  }
+  function tabBtn(stage, label, done){
+    return '<div class="tab" data-stage="' + stage + '"><span class="dot' + (done ? '' : ' off') + '">●</span> ' + label + '</div>';
+  }
+  function paintTabs(){
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(t){
+      t.classList.toggle('on', t.getAttribute('data-stage') === activeStage);
+    });
+  }
+  function refreshStars(p){
+    var e = document.getElementById('mstars'); if(e) e.innerHTML = starRow(p.id);
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(t){
+      var st = t.getAttribute('data-stage');
+      var done = st === 'replay' ? stars(p.id).viz : st === 'solve' ? stars(p.id).code : stars(p.id).concept;
+      var d = t.querySelector('.dot'); if(d) d.className = 'dot' + (done ? '' : ' off');
+    });
+    renderRail();
+  }
+
+  function renderStage(p){
+    var s = document.getElementById('stage');
+    if(activeStage === 'replay') return renderReplay(p, s);
+    if(activeStage === 'solve') return renderSolve(p, s);
+    return renderConcept(p, s);
+  }
+
+  // ================= STAGE 1: REPLAY =================
+  var trace = { steps: [], idx: 0, code: '', p: null };
+  function renderReplay(p, host){
+    editor = null;
+    host.innerHTML =
+      '<div class="desc">' + p.desc + '</div>' +
+      '<h4 class="sec">Debug replay — the reference solution, one step at a time</h4>' +
+      '<div class="replay-grid">' +
+        '<div class="rcode" id="rcode"><pre>loading trace…</pre></div>' +
+        '<div class="vizbox"><div class="cap" id="vcap"></div><div id="vbody"></div>' +
+          '<table class="vtable" id="vtab"></table></div>' +
+      '</div>' +
+      '<div class="rctrl">' +
+        '<button id="r-reset">⏮ Reset</button>' +
+        '<button id="r-back">◀ Step</button>' +
+        '<button id="r-fwd">Step ▶</button>' +
+        '<button id="r-play">▶ Play</button>' +
+        '<span class="pos" id="r-pos"></span>' +
+      '</div>' +
+      '<p style="color:var(--muted);font-size:12px;margin-top:10px">Step to the end to earn the <b>Replay</b> star. Then open <b>2 · Solve</b> and write it yourself.</p>';
+
+    if(trace.p === p.id && trace.steps.length){ paintReplay(p); wireReplay(p); return; }
+
+    var t = p.trace || {};
+    var opts = Object.assign({}, p.opts || {}, t.opts || {});
+    var code = t.code || p.hints[2];
+    RT.trace(code, p.func, t.input || (p.tests[0] && p.tests[0].input) || [], opts).then(function(res){
+      if(currentId !== p.id || activeStage !== 'replay') return;
+      if(res.timeout || res.compile_error || res.error){
+        document.getElementById('rcode').innerHTML = '<pre>' + esc((res.error || res.compile_error || 'trace timed out')) + '</pre>';
+        return;
+      }
+      trace = { steps: res.steps || [], idx: 0, code: res.code || code, p: p.id };
+      paintReplay(p); wireReplay(p);
+    });
+  }
+  function wireReplay(p){
+    document.getElementById('r-reset').onclick = function(){ trace.idx = 0; stopPlay(); paintReplay(p); };
+    document.getElementById('r-back').onclick = function(){ trace.idx = Math.max(0, trace.idx - 1); stopPlay(); paintReplay(p); };
+    document.getElementById('r-fwd').onclick = function(){ stepFwd(p); };
+    document.getElementById('r-play').onclick = function(){ togglePlay(p); };
+  }
+  function stopPlay(){ if(playInt){ clearInterval(playInt); playInt = null; var b = document.getElementById('r-play'); if(b) b.textContent = '▶ Play'; } }
+  function togglePlay(p){
+    if(playInt){ stopPlay(); return; }
+    var b = document.getElementById('r-play'); if(b) b.textContent = '⏸ Pause';
+    playInt = setInterval(function(){
+      if(trace.idx >= trace.steps.length - 1){ stepFwd(p); stopPlay(); return; }
+      stepFwd(p);
+    }, 750);
+  }
+  function stepFwd(p){
+    if(trace.idx < trace.steps.length - 1){ trace.idx++; paintReplay(p); }
+    if(trace.idx >= trace.steps.length - 1){
+      if(grantStar(p.id, 'viz')){ celebrate('★ REPLAY STAR'); refreshStars(p); }
+    }
+  }
+  function paintReplay(p){
+    var steps = trace.steps, i = trace.idx, step = steps[i] || { locals: {} }, prev = steps[i - 1] || null;
+    // code
+    var lines = trace.code.split('\n');
+    var codeHtml = lines.map(function(ln, k){
+      return '<span class="ln' + (step.line === k + 1 ? ' cur' : '') + '" data-n="' + (k + 1) + '">' + (esc(ln) || ' ') + '</span>';
+    }).join('');
+    document.getElementById('rcode').innerHTML = '<pre>' + codeHtml + '</pre>';
+    document.getElementById('r-pos').textContent = 'step ' + (i + 1) + ' / ' + steps.length +
+      (step.event === 'return' ? '  · returns ' + fmtVal(step.ret) : '');
+    // caption: changed vars
+    var changed = [];
+    var cur = step.locals || {}, pl = prev ? (prev.locals || {}) : {};
+    Object.keys(cur).forEach(function(k){
+      if(isNoise(cur[k])) return;
+      if(JSON.stringify(cur[k]) !== JSON.stringify(pl[k])) changed.push(k + ' = ' + fmtVal(cur[k]));
+    });
+    document.getElementById('vcap').textContent = 'line ' + step.line + (changed.length ? '  ·  ' + changed.join('   ') : '');
+    // viz
+    var cfg = (p.trace && p.trace.viz) || { kind: 'none' };
+    document.getElementById('vbody').innerHTML = renderViz(cfg, step, prev, p);
+    // var table
+    var rows = Object.keys(cur).filter(function(k){
+      if(isNoise(cur[k])) return false;
+      return k !== 'nums' || cfg.kind !== 'array';
+    }).map(function(k){
+      var chg = JSON.stringify(cur[k]) !== JSON.stringify(pl[k]);
+      return '<tr><td class="k">' + esc(k) + '</td><td class="' + (chg ? 'chg' : '') + '">' + esc(fmtVal(cur[k])) + '</td></tr>';
+    }).join('');
+    document.getElementById('vtab').innerHTML = rows;
+    var last = i >= steps.length - 1;
+    var rb = document.getElementById('r-fwd'); if(rb) rb.disabled = last && false;
+  }
+
+  function fmtVal(v){
+    if(v === null || v === undefined) return 'None';
+    if(typeof v === 'boolean') return v ? 'True' : 'False';
+    if(typeof v === 'number' || typeof v === 'string') return typeof v === 'string' ? JSON.stringify(v) : String(v);
+    if(Array.isArray(v)) return '[' + v.map(fmtVal).join(', ') + ']';
+    if(v.__list__) return v.__list__.length ? v.__list__.join(' → ') : '∅';
+    if(v.__set__) return '{' + v.__set__.map(fmtVal).join(', ') + '}';
+    if(typeof v === 'object'){
+      var ks = Object.keys(v);
+      return '{' + ks.slice(0, 8).map(function(k){ return k + ': ' + fmtVal(v[k]); }).join(', ') + (ks.length > 8 ? ', …' : '') + '}';
+    }
+    return String(v);
+  }
+  function toArr(raw){
+    if(typeof raw === 'string') return raw.split('');
+    if(Array.isArray(raw)) return raw;
+    if(raw && raw.__list__) return raw.__list__;
+    return null;
+  }
+  function isNum(x){ return typeof x === 'number'; }
+  function isNoise(v){ return typeof v === 'string' && v.charAt(0) === '<' && v.indexOf('function') > -1; }
+
+  function renderViz(cfg, step, prev, p){
+    var L = step.locals || {};
+    try {
+      if(cfg.kind === 'array') return vizArray(cfg, L);
+      if(cfg.kind === 'hash') return vizHash(cfg, L, prev);
+      if(cfg.kind === 'stack') return vizStack(cfg, L);
+      if(cfg.kind === 'llrev') return vizLLRev(step);
+      if(cfg.kind === 'llptr') return vizLLPtr(cfg, step, p);
+      if(cfg.kind === 'tree') return vizTree(L, prev);
+    } catch(e){ return '<div style="color:var(--muted)">(no visual for this step)</div>'; }
+    return '<div style="color:var(--muted)">Variables →</div>';
+  }
+  function cellsHtml(arr, shade, marks, hit){
+    var c = arr.map(function(v, k){
+      var mk = (marks[k] || []).join(' ');
+      return '<div class="cell ' + (shade[k] || '') + (hit === k ? ' hit' : '') + '">' +
+        (mk ? '<span class="mk">' + esc(mk) + '</span>' : '') + esc(String(v)) + '</div>';
+    }).join('');
+    var idx = arr.map(function(_, k){ return '<span>' + k + '</span>'; }).join('');
+    return '<div class="cells">' + c + '</div><div class="idxs">' + idx + '</div>';
+  }
+  function vizArray(cfg, L){
+    var arr = toArr(L[cfg.arr]); if(!arr) return '<div style="color:var(--muted)">waiting for ' + esc(cfg.arr) + '…</div>';
+    var shade = {}, marks = {};
+    if(cfg.win){ var lo = L[cfg.win.lo], hi = L[cfg.win.hi];
+      if(isNum(lo) && isNum(hi)) for(var k = lo; k <= hi; k++) shade[k] = 'win'; }
+    if(cfg.shadeTo != null && isNum(L[cfg.shadeTo])) for(var k = 0; k < L[cfg.shadeTo]; k++) shade[k] = 'done';
+    if(cfg.slideEnd != null){
+      var e = L[cfg.slideEnd], kk = L[cfg.klen];
+      if(isNum(e) && isNum(kk)) for(var k = e - kk + 1; k <= e; k++){ if(k >= 0) shade[k] = 'win'; }
+      else if(isNum(kk)) for(var k = 0; k < kk; k++) shade[k] = 'win';
+    }
+    if(cfg.ptr) Object.keys(cfg.ptr).forEach(function(name){ var v = L[cfg.ptr[name]]; if(isNum(v)) (marks[v] = marks[v] || []).push(name); });
+    var hit = null;
+    if(cfg.slidePos != null && isNum(L[cfg.slidePos])){ hit = L[cfg.slidePos]; (marks[hit] = marks[hit] || []).push('i'); }
+    var html = cellsHtml(arr, shade, marks, hit);
+    var stats = (cfg.stats || []).filter(function(s){ return s in L; }).map(function(s){
+      return '<span class="stat">' + esc(s) + ' = <b>' + esc(fmtVal(L[s])) + '</b></span>';
+    }).join('');
+    if(cfg.dict && L[cfg.dict]) stats += '<span class="stat">' + esc(cfg.dict) + ': ' + esc(fmtVal(L[cfg.dict])) + '</span>';
+    return html + (stats ? '<div>' + stats + '</div>' : '');
+  }
+  function vizHash(cfg, L, prev){
+    var arr = toArr(L[cfg.arr]) || [];
+    var pos = (cfg.pos != null && isNum(L[cfg.pos])) ? L[cfg.pos] : null;
+    var marks = {}; if(pos != null) marks[pos] = ['i'];
+    var head = cellsHtml(arr, {}, marks, pos);
+    var d = L[cfg.dict];
+    var body = '';
+    if(d && d.__set__){
+      body = '<div class="chips">' + d.__set__.map(function(v){ return '<span>' + esc(fmtVal(v)) + '</span>'; }).join('') + '</div>';
+    } else if(d && typeof d === 'object'){
+      var pd = prev ? (prev.locals || {})[cfg.dict] : null;
+      body = '<table class="vtable">' + Object.keys(d).map(function(k){
+        var isNew = !pd || JSON.stringify(pd[k]) !== JSON.stringify(d[k]);
+        return '<tr><td class="k">' + esc(k) + '</td><td class="' + (isNew ? 'chg' : '') + '">' + esc(fmtVal(d[k])) + '</td></tr>';
+      }).join('') + '</table>';
+    } else {
+      body = '<div style="color:var(--muted)">' + esc(cfg.dict) + ' = {}</div>';
+    }
+    return head + '<h4 class="sec" style="margin:10px 0 4px">' + esc(cfg.dict) + '</h4>' + body;
+  }
+  function vizStack(cfg, L){
+    var arr = toArr(L[cfg.arr]) || [];
+    var pos = (cfg.pos != null && isNum(L[cfg.pos])) ? L[cfg.pos] : null;
+    var marks = {}; if(pos != null) marks[pos] = ['i'];
+    var head = cellsHtml(arr, {}, marks, pos);
+    var st = toArr(L[cfg.stack]) || [];
+    var boxes = st.map(function(v){ return '<div class="sbox">' + esc(String(v)) + '</div>'; }).join('') || '<div style="color:var(--muted)">empty</div>';
+    return head + '<h4 class="sec" style="margin:10px 0 4px">stack (top on the right… shown bottom-up)</h4><div class="stackwrap">' + boxes + '</div>';
+  }
+  function chain(list, sep){
+    if(!list || !list.length) return '<span class="arrow">∅</span>';
+    return list.map(function(v){ return '<span class="node">' + esc(String(v)) + '</span>'; }).join('<span class="arrow"> ' + (sep || '→') + ' </span>');
+  }
+  function vizLLRev(step){
+    var pr = step.probe || {};
+    var prev = pr.prev && pr.prev.__list__ ? pr.prev.__list__ : [];
+    var cur = pr.cur && pr.cur.__list__ ? pr.cur.__list__ : [];
+    var nxt = pr.nxt && pr.nxt.__list__ ? pr.nxt.__list__ : [];
+    return '<div><b>prev</b> — reversed so far<div class="nodes">' + chain(prev.slice().reverse(), '←') + '</div></div>' +
+      '<div style="margin-top:10px"><b>cur</b> — node being flipped, then the rest<div class="nodes">' + chain(cur, '→') + '</div></div>' +
+      '<div style="margin-top:10px"><b>nxt</b> — saved next<div class="nodes">' + chain(nxt.slice(0, 1), '→') + '</div></div>';
+  }
+  function vizLLPtr(cfg, step, p){
+    var input = (p.trace && p.trace.input) || [];
+    var list = input[0] || [];
+    var pos = cfg.cycle ? (input[1] != null ? input[1] : -1) : -1;
+    var pi = step.probe_index || {};
+    var slow = pi.slow, fast = pi.fast;
+    var nodes = list.map(function(v, k){
+      var mk = [];
+      if(slow === k) mk.push('slow');
+      if(fast === k) mk.push('fast');
+      return '<span class="node">' + (mk.length ? '<span class="mk">' + mk.join('/') + '</span>' : '') + esc(String(v)) + '</span>';
+    }).join('<span class="arrow"> → </span>');
+    var tail = '';
+    if(pos >= 0) tail = '<div style="color:var(--ptr);font-size:11px;margin-top:8px">⟲ tail.next wired back to index ' + pos + ' (value ' + esc(String(list[pos])) + ')</div>';
+    var park = '';
+    if(slow === -1 || fast === -1) park = '<div style="color:var(--muted);font-size:11px;margin-top:6px">a pointer at ∅ = past the end (no cycle)</div>';
+    return '<div class="nodes">' + nodes + '</div>' + tail + park;
+  }
+  function vizTree(L, prev){
+    var path = Array.isArray(L.path) ? L.path : [];
+    var result = Array.isArray(L.result) ? L.result : [];
+    var pr = prev ? (prev.locals || {}).result : null;
+    var prn = Array.isArray(pr) ? pr.length : 0;
+    var pathChips = '<div class="chips">' + (path.length ? path.map(function(v){ return '<span>' + esc(String(v)) + '</span>'; }).join('') : '<span class="arrow">[] (empty subset)</span>') + '</div>';
+    var coll = '<div class="chips">' + result.map(function(sub, k){
+      return '<span class="' + (k >= prn ? 'new' : '') + '">[' + sub.map(String).join(',') + ']</span>';
+    }).join('') + '</div>';
+    return '<div><b>current path</b> (depth ' + path.length + ')</div>' + pathChips +
+      '<h4 class="sec" style="margin:10px 0 4px">collected subsets (' + result.length + ')</h4>' + coll;
+  }
+
+  // ================= STAGE 2: SOLVE =================
+  function renderSolve(p, host){
+    host.innerHTML =
+      '<div class="desc">' + p.desc + '</div>' +
+      '<h4 class="sec">Examples</h4>' +
+      p.examples.map(function(e){ return '<div class="ex">Input:  ' + esc(e.i) + '\nOutput: ' + esc(e.o) + '</div>'; }).join('') +
+      '<h4 class="sec">Your solution</h4>' +
+      '<div class="editorwrap"><textarea id="ed" class="fb"></textarea></div>' +
+      '<div class="actions">' +
+        '<button class="run" id="b-run">Run sample tests</button>' +
+        '<button class="submit" id="b-submit">Submit</button>' +
+        '<button id="b-reset">Reset</button>' +
+        '<div class="hb"><span id="h-label"></span><button id="b-hint">Reveal hint</button></div>' +
+      '</div>' +
+      '<div id="hintarea"></div>' +
+      '<div id="results"></div>';
+
+    var saved = LScode.get(p.id);
+    var initial = (saved !== null && saved !== undefined) ? saved : p.starter;
+    var ta = document.getElementById('ed'); ta.value = initial;
+    if(window.CodeMirror){
+      editor = CodeMirror.fromTextArea(ta, {
+        mode: 'python', lineNumbers: true, indentUnit: 4, tabSize: 4,
+        matchBrackets: true, autoCloseBrackets: true, styleActiveLine: true,
+        theme: theme() === 'dark' ? 'material-darker' : 'default'
+      });
+      editor.setSize('100%', '100%');
+      editor.on('change', function(){ clearTimeout(saveT); saveT = setTimeout(function(){ LScode.set(p.id, editor.getValue()); }, 400); });
+      setTimeout(function(){ editor.refresh(); }, 40);
+    } else {
+      editor = null;
+      ta.addEventListener('input', function(){ clearTimeout(saveT); saveT = setTimeout(function(){ LScode.set(p.id, ta.value); }, 400); });
+    }
+
+    var hintLevel = 0;
+    document.getElementById('b-hint').onclick = function(){
+      if(hintLevel >= 3) return;
+      hintLevel++;
+      var titles = ['pattern', 'approach', 'reference solution'];
+      var body = hintLevel < 3
+        ? '<div>' + esc(p.hints[hintLevel - 1]) + '</div>'
+        : '<pre>' + esc(p.hints[2]) + '</pre>';
+      document.getElementById('hintarea').insertAdjacentHTML('beforeend',
+        '<div class="hint"><h5>Hint ' + hintLevel + ' · ' + titles[hintLevel - 1] + '</h5>' + body + '</div>');
+      var b = document.getElementById('b-hint'), lab = document.getElementById('h-label');
+      if(hintLevel === 1){ b.textContent = 'Reveal approach'; lab.textContent = '1 / 3'; }
+      else if(hintLevel === 2){ b.textContent = 'Reveal solution'; lab.textContent = '2 / 3'; }
+      else { b.disabled = true; lab.textContent = '3 / 3'; }
+    };
+    document.getElementById('b-reset').onclick = function(){
+      if(!confirm('Reset code to the starter stub?')) return;
+      if(editor) editor.setValue(p.starter); else document.getElementById('ed').value = p.starter;
+      LScode.set(p.id, p.starter);
+    };
+    document.getElementById('b-run').onclick = function(){ execute(p, false); };
+    document.getElementById('b-submit').onclick = function(){ execute(p, true); };
+  }
+  function getCode(){ return editor ? editor.getValue() : (document.getElementById('ed') || {}).value || ''; }
+
+  function execute(p, isSubmit){
+    var code = getCode(); LScode.set(p.id, code);
+    var cases = isSubmit ? p.tests : p.tests.slice(0, p.visible);
+    var rb = document.getElementById('b-run'), sb = document.getElementById('b-submit');
+    rb.disabled = sb.disabled = true;
+    var res = document.getElementById('results');
+    res.innerHTML = '<div class="rsummary">' + (isSubmit ? 'Submitting…' : 'Running…') +
+      ' <span style="color:var(--muted);font-weight:400">(first run loads Python, ~10–20s)</span></div>';
+    try { document.querySelector('.actions').scrollIntoView({ block: 'start' }); } catch(e){}
+    RT.run(code, p.func, cases, p.opts || {}).then(function(r){
+      rb.disabled = sb.disabled = false;
+      renderResults(p, r, isSubmit, cases);
+    });
+  }
+  function renderResults(p, res, isSubmit, cases){
+    var host = document.getElementById('results');
+    if(res.timeout){ host.innerHTML = '<div class="errbox">Timed out after ~9s — likely an infinite loop. The runtime was restarted.</div>'; return; }
+    if(res.compile_error){ host.innerHTML = '<div class="rsummary fail">Error</div><div class="errbox">' + esc(trim(res.compile_error)) + '</div>'; return; }
+    var rs = res.results || [], passed = rs.filter(function(r){ return r.passed; }).length;
+    var all = passed === rs.length && rs.length > 0;
+    var html = '<div class="rsummary ' + (all ? 'pass' : 'fail') + '">' + (isSubmit ? 'Submit: ' : 'Run: ') +
+      passed + ' / ' + rs.length + ' passed' + (isSubmit && all ? '  —  Solve star earned ★' : '') + '</div>';
+    rs.forEach(function(r, i){
+      var c = cases[i];
+      html += '<div class="case ' + (r.passed ? 'pass' : 'fail') + '"><span class="b">' + (r.passed ? 'PASS' : 'FAIL') +
+        '</span>  Case ' + (i + 1) + '<div>Input:    ' + esc(fmtInput(p, c.input)) + '</div>';
+      if(r.error) html += '<div>Error:    ' + esc(trim(r.error)) + '</div>';
+      else html += '<div>Expected: ' + esc(r.expected) + '</div><div>Got:      ' + esc(r.got) + '</div>';
+      html += '</div>';
+    });
+    host.innerHTML = html;
+    if(isSubmit && all){
+      if(grantStar(p.id, 'code')){ celebrate('★ SOLVE STAR'); }
+      refreshStars(p);
+    }
+  }
+  function fmtInput(p, input){
+    var t = (p.opts || {}).arg_transform;
+    if(t === 'cycle') return 'head=' + JSON.stringify(input[0]) + ', pos=' + input[1];
+    return input.map(function(x){ return JSON.stringify(x); }).join(', ');
+  }
+  function trim(s){ s = String(s); return (s.length > 1200 ? s.slice(-1200) : s).trim(); }
+
+  // ================= STAGE 3: CONCEPT =================
+  function renderConcept(p, host){
+    editor = null;
+    var mcqHtml = p.mcqs.map(function(m, qi){
+      var order = shuffled(m.options.length);
+      conceptState.order[qi] = order;
+      var opts = order.map(function(oi){
+        return '<label class="opt" data-qi="' + qi + '" data-oi="' + oi + '">' + esc(m.options[oi]) + '</label>';
+      }).join('');
+      return '<div class="mcq" data-qi="' + qi + '"><div class="q">' + (qi + 1) + '. ' + esc(m.q) + '</div>' +
+        opts + '<div class="exp">' + esc(m.explain) + '</div></div>';
+    }).join('');
+
+    var ref = p.hints[2].split('\n').filter(function(l){ return l.length; });
+    conceptState.ref = ref;
+    var order = shuffled(ref.length);
+    while(order.every(function(v, i){ return v === i; })) order = shuffled(ref.length);
+    conceptState.plines = order.map(function(i){ return ref[i]; });
+
+    host.innerHTML =
+      '<h4 class="sec">Concept refresher — MCQs</h4>' +
+      '<div style="color:var(--muted);font-size:12px;margin-bottom:6px">Answer all correctly, then reorder the code below. Both parts done → <b>Concept</b> star.</div>' +
+      mcqHtml +
+      '<h4 class="sec">Reassemble the reference solution</h4>' +
+      '<div style="color:var(--muted);font-size:12px;margin-bottom:6px">Drag rows, or use ▲▼, until the lines are in the right order (indentation counts).</div>' +
+      '<div class="parsons" id="parsons"></div>' +
+      '<button class="cbtn go" id="p-check" style="margin-top:8px">Check order</button> ' +
+      '<button class="cbtn" id="p-shuffle" style="margin-top:8px">Shuffle</button>' +
+      '<div id="c-status" style="margin-top:10px;font-weight:700"></div>';
+
+    Array.prototype.forEach.call(host.querySelectorAll('.opt'), function(o){
+      o.addEventListener('click', function(){
+        var qi = +o.getAttribute('data-qi'), oi = +o.getAttribute('data-oi');
+        var mcq = host.querySelector('.mcq[data-qi="' + qi + '"]');
+        if(mcq.classList.contains('answered')) return;
+        mcq.classList.add('answered');
+        conceptState.answers[qi] = oi;
+        Array.prototype.forEach.call(mcq.querySelectorAll('.opt'), function(x){
+          var xi = +x.getAttribute('data-oi');
+          if(xi === p.mcqs[qi].correct) x.classList.add('right');
+          else if(xi === oi) x.classList.add('wrong');
+        });
+        maybeConceptStar(p);
+      });
+    });
+    renderParsons();
+    document.getElementById('p-check').onclick = function(){ checkParsons(p); };
+    document.getElementById('p-shuffle').onclick = function(){
+      conceptState.plines = shuffled(conceptState.ref.length).map(function(i){ return conceptState.ref[i]; });
+      renderParsons();
+    };
+  }
+  var conceptState = { answers: {}, order: {}, ref: [], plines: [], parsonsOk: false };
+
+  function shuffled(n){
+    var a = []; for(var i = 0; i < n; i++) a.push(i);
+    for(var i = n - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function renderParsons(){
+    var host = document.getElementById('parsons');
+    host.innerHTML = conceptState.plines.map(function(line, i){
+      return '<div class="pline" draggable="true" data-i="' + i + '">' +
+        '<span class="mv"><button data-dir="-1">▲</button><button data-dir="1">▼</button></span>' +
+        '<span class="code">' + (esc(line) || ' ') + '</span></div>';
+    }).join('');
+    var dragI = null;
+    Array.prototype.forEach.call(host.querySelectorAll('.pline'), function(row){
+      row.addEventListener('dragstart', function(){ dragI = +row.getAttribute('data-i'); row.classList.add('drag'); });
+      row.addEventListener('dragend', function(){ row.classList.remove('drag'); });
+      row.addEventListener('dragover', function(e){ e.preventDefault(); });
+      row.addEventListener('drop', function(e){
+        e.preventDefault();
+        var to = +row.getAttribute('data-i');
+        if(dragI === null || dragI === to) return;
+        var arr = conceptState.plines, item = arr.splice(dragI, 1)[0];
+        arr.splice(to, 0, item);
+        renderParsons();
+      });
+      Array.prototype.forEach.call(row.querySelectorAll('.mv button'), function(b){
+        b.addEventListener('click', function(){
+          var i = +row.getAttribute('data-i'), dir = +b.getAttribute('data-dir'), j = i + dir;
+          var arr = conceptState.plines;
+          if(j < 0 || j >= arr.length) return;
+          var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+          renderParsons();
+        });
+      });
+    });
+  }
+  function checkParsons(p){
+    var target = conceptState.ref.join('\n');
+    var got = conceptState.plines.join('\n');
+    var rows = document.querySelectorAll('#parsons .pline');
+    conceptState.plines.forEach(function(line, i){
+      var okHere = line === conceptState.ref[i];
+      rows[i].classList.toggle('ok', okHere);
+      rows[i].classList.toggle('bad', !okHere);
+    });
+    conceptState.parsonsOk = (got === target);
+    document.getElementById('c-status').textContent = conceptState.parsonsOk ? 'Order correct ✓' : 'Not quite — keep adjusting.';
+    document.getElementById('c-status').style.color = conceptState.parsonsOk ? 'var(--pass)' : 'var(--fail)';
+    maybeConceptStar(p);
+  }
+  function maybeConceptStar(p){
+    var allMcq = p.mcqs.every(function(m, qi){ return conceptState.answers[qi] === m.correct; });
+    if(allMcq && conceptState.parsonsOk){
+      if(grantStar(p.id, 'concept')){ celebrate('★ CONCEPT STAR'); refreshStars(p); }
+      var st = document.getElementById('c-status');
+      if(st){ st.textContent = 'Concept star earned ★ — mission ' + (starCount(p.id) === 3 ? 'CLEARED ✦' : 'progress saved'); st.style.color = 'var(--gold)'; }
+    }
+  }
+
+  // ---------------- dashboard ----------------
+  var modal = document.getElementById('modal');
+  document.getElementById('btn-dash').addEventListener('click', function(){ renderDash(); modal.classList.add('show'); });
+  document.getElementById('modal-x').addEventListener('click', function(){ modal.classList.remove('show'); });
+  modal.addEventListener('click', function(e){ if(e.target === modal) modal.classList.remove('show'); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') modal.classList.remove('show'); });
+  function renderDash(){
+    var rows = '<div class="drow"><span class="n"><b>Total stars</b></span><span class="bar"><i style="width:' + (100 * totalStars() / 54) + '%"></i></span><span class="v">' + totalStars() + '/54</span></div>' +
+      '<div class="drow"><span class="n"><b>Missions cleared</b></span><span class="bar"><i style="width:' + (100 * missionsCleared() / 18) + '%"></i></span><span class="v">' + missionsCleared() + '/18</span></div>';
+    CHAPTERS.forEach(function(ch, ci){
+      var list = chapterProblems(ch);
+      var got = list.reduce(function(a, x){ return a + starCount(x.id); }, 0);
+      var max = list.length * 3;
+      rows += '<div class="drow"><span class="n">Ch ' + (ci + 1) + ' · ' + esc(ch) + '</span><span class="bar"><i style="width:' + (100 * got / max) + '%"></i></span><span class="v">' + got + '/' + max + '</span></div>';
+    });
+    document.getElementById('dash').innerHTML = rows;
+  }
+
+  // ---------------- fx ----------------
+  var toastEl = document.getElementById('toast'), toastT = null;
+  function celebrate(msg){
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove('show'); }, 2000);
+    for(var i = 0; i < 16; i++){
+      var d = document.createElement('div');
+      d.className = 'fx';
+      d.style.left = (46 + Math.random() * 8) + 'vw';
+      d.style.top = '40vh';
+      d.style.background = ['#fbbf24', '#38bdf8', '#f472b6', '#3fb950'][i % 4];
+      d.style.setProperty('--dx', (Math.random() * 40 - 20) + 'vw');
+      d.style.animation = 'fall ' + (0.9 + Math.random() * 0.6) + 's ease-in forwards';
+      document.body.appendChild(d);
+      setTimeout((function(n){ return function(){ n.remove(); }; })(d), 1600);
+    }
+  }
+
+  // ---------------- boot ----------------
+  applyTheme(theme());
+  window.addEventListener('load', function(){ applyTheme(theme()); renderCareer(); });
+  renderCareer();
+})();
+</script>
+</body>
+</html>
