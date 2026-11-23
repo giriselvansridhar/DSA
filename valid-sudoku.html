@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Valid Sudoku · Step by Step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Layout: controls on top; board + set on the left, code on the right; one column on phones. */
+:root {
+  --bg: #f1f3f0;
+  --surface: #ffffff;
+  --ink: #17211c;
+  --muted: #5c6862;
+  --line: #dde2dd;
+  --grid-strong: #8a958f;
+  --accent: #0e7a6a;
+  --accent-soft: rgba(14, 122, 106, 0.13);
+  --hl: #fff1b8;
+  --bad: #c43d2f;
+  --bad-soft: rgba(196, 61, 47, 0.16);
+  --good: #1f8a3b;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111513; --surface: #1a1f1c; --ink: #e7ece8; --muted: #9ba7a0; --line: #2c3430; --grid-strong: #66726b;
+    --accent: #3cc2aa; --accent-soft: rgba(60, 194, 170, 0.17); --hl: rgba(255, 214, 102, 0.18);
+    --bad: #f07565; --bad-soft: rgba(240, 117, 101, 0.2); --good: #5fd07a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111513; --surface: #1a1f1c; --ink: #e7ece8; --muted: #9ba7a0; --line: #2c3430; --grid-strong: #66726b;
+  --accent: #3cc2aa; --accent-soft: rgba(60, 194, 170, 0.17); --hl: rgba(255, 214, 102, 0.18);
+  --bad: #f07565; --bad-soft: rgba(240, 117, 101, 0.2); --good: #5fd07a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); padding: 20px 16px 40px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { font-size: 24px; margin: 0; text-wrap: balance; }
+.lead { color: var(--muted); margin: 4px 0 0; max-width: 65ch; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+button { font: 500 14px var(--font-body); border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.grow { flex: 1; }
+.muted { color: var(--muted); font-size: 13px; }
+.count { font: 13px var(--font-mono); color: var(--muted); }
+input[type="range"] { accent-color: var(--accent); width: 110px; }
+.chip { font: 13px var(--font-body); padding: 5px 11px; border-radius: 99px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.phases { display: flex; gap: 6px; flex-wrap: wrap; }
+.phase { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.phase.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.phase.done { color: var(--good); border-color: var(--good); }
+.phase.fail { background: var(--bad); border-color: var(--bad); color: #fff; }
+.explain { font-size: 17px; font-weight: 500; min-height: 2.6em; max-width: 75ch; }
+.explain code { font-family: var(--font-mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; font-size: 15px; }
+.explain .bad { color: var(--bad); }
+.explain .good { color: var(--good); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+
+.boardwrap { display: grid; grid-template-columns: 22px auto; grid-template-rows: 20px auto; gap: 2px; justify-content: start; }
+.colnums { grid-column: 2; display: grid; grid-template-columns: repeat(9, var(--cell)); font: 11px var(--font-mono); color: var(--muted); text-align: center; }
+.rownums { grid-row: 2; display: grid; grid-template-rows: repeat(9, var(--cell)); font: 11px var(--font-mono); color: var(--muted); align-items: center; }
+.board { --cell: clamp(30px, 8.4vw, 44px); grid-row: 2; grid-column: 2; display: grid; grid-template-columns: repeat(9, var(--cell)); grid-template-rows: repeat(9, var(--cell)); border: 2px solid var(--grid-strong); border-radius: 4px; overflow: hidden; }
+.boardwrap { --cell: clamp(30px, 8.4vw, 44px); }
+.cell { display: grid; place-items: center; font: 600 17px var(--font-mono); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface); position: relative; }
+.cell.empty { color: transparent; }
+.cell.c2, .cell.c5 { border-right: 2px solid var(--grid-strong); }
+.cell.r2, .cell.r5 { border-bottom: 2px solid var(--grid-strong); }
+.cell.c8 { border-right: 0; } .cell.r8 { border-bottom: 0; }
+.cell.region { background: var(--accent-soft); }
+.cell.inset { color: var(--accent); }
+.cell.cur { box-shadow: inset 0 0 0 3px var(--accent); z-index: 1; }
+.cell.cur.empty { color: var(--muted); }
+.cell.cur.empty::after { content: "·"; color: var(--muted); position: absolute; }
+.cell.dup { background: var(--bad-soft); color: var(--bad); box-shadow: inset 0 0 0 3px var(--bad); z-index: 2; }
+@media (prefers-reduced-motion: no-preference) {
+  .cell { transition: background .2s, box-shadow .15s, color .2s; }
+  .setitem { animation: pop .25s ease-out; }
+}
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.setbox { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; align-items: center; font: 600 15px var(--font-mono); }
+.setbox .brace { color: var(--muted); font-size: 20px; }
+.setitem { min-width: 34px; height: 34px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); }
+.setitem.dup { border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
+.vars { display: flex; flex-wrap: wrap; gap: 14px; font: 14px var(--font-mono); margin-top: 10px; }
+.vars b { color: var(--accent); }
+
+pre.code { margin: 0; font: 13px/1.68 var(--font-mono); overflow-x: auto; }
+.ln { display: block; padding: 0 8px; border-radius: 4px; white-space: pre; }
+.ln .no { display: inline-block; width: 2.2em; color: var(--muted); user-select: none; }
+.ln.cur { background: var(--hl); font-weight: 600; }
+.ln.cur .no { color: var(--ink); }
+.ln.curbad { background: var(--bad-soft); font-weight: 600; }
+.kw { color: var(--accent); }
+.cm { color: var(--muted); }
+label.chk { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+</style>
+
+<style>
+.sitenav { max-width: 1120px; margin: 0 auto 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sitenav .brand { font-weight: 700; margin-right: 8px; color: var(--ink); text-decoration: none; }
+.sitenav a.pg { font: 500 13px var(--font-body); padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; background: var(--surface); }
+.sitenav a.pg:hover { border-color: var(--accent); }
+.sitenav a.pg.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+</style>
+<style>.wrap { grid-template-columns: minmax(0, 1fr); } .wrap > *, .main > *, .state > * { min-width: 0; } .boxes, .pairs { min-width: 0; }</style>
+</head>
+<body>
+<nav class="sitenav"><a class="brand" href="index.html">Giri's DSA Lab</a><a class="pg on" href="valid-sudoku.html">Valid Sudoku</a><a class="pg" href="top-k-frequent.html">Top K Frequent</a><a class="pg" href="maximum-subarray.html">Maximum Subarray</a><a class="pg" href="group-anagrams.html">Group Anagrams</a></nav>
+<div class="wrap">
+  <header>
+    <h1>Valid Sudoku, step by step</h1>
+    <p class="lead">Watch your solution check the 3 rules: no repeat in any row, any column, or any 3×3 box. One fresh set per row, column and box catches a repeat.</p>
+  </header>
+
+  <section class="card">
+    <div class="row">
+      <span class="muted">Board:</span>
+      <button class="chip on" data-ex="fail">Your failing test (box repeat)</button>
+      <button class="chip" data-ex="valid">Valid board</button>
+      <button class="chip" data-ex="col">Column repeat</button>
+      <span class="grow"></span>
+      <label class="chk" for="skipEmpty"><input type="checkbox" id="skipEmpty" checked /> skip empty cells</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <button class="ghost" id="firstBtn">First</button>
+      <button class="ghost" id="prevBtn">Back</button>
+      <button id="nextBtn">Next step</button>
+      <button class="ghost" id="playBtn">Play</button>
+      <button class="ghost" id="jumpBtn">Jump to boxes</button>
+      <label class="count" for="speed">speed <input id="speed" type="range" min="150" max="1800" step="50" value="700" /></label>
+      <span class="grow"></span>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="phases" style="margin-top:10px">
+      <span class="phase" data-p="1">Rule 1 · Rows</span>
+      <span class="phase" data-p="2">Rule 2 · Columns</span>
+      <span class="phase" data-p="3">Rule 3 · Boxes</span>
+    </div>
+    <div class="explain" id="explain" style="margin-top:10px" aria-live="polite"></div>
+  </section>
+
+  <div class="main">
+    <section class="state" style="display:grid; gap:14px">
+      <div class="card">
+        <div class="label" id="regionLabel">Board</div>
+        <div class="boardwrap">
+          <div class="colnums" id="colnums"></div>
+          <div class="rownums" id="rownums"></div>
+          <div class="board" id="board"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label">Set (digits seen in this <span id="setWhat">row</span>)</div>
+        <div class="setbox" id="setView"></div>
+        <div class="vars" id="varsView"></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="label">Your code</div>
+      <pre class="code" id="code"></pre>
+    </section>
+  </div>
+  <p class="muted">Keyboard: → next step, ← back, space play or pause.</p>
+</div>
+
+<script>
+const EX = {
+  fail: [[".",".",".",".","5",".",".","1","."],[".","4",".","3",".",".",".",".","."],[".",".",".",".",".","3",".",".","1"],["8",".",".",".",".",".",".","2","."],[".",".","2",".","7",".",".",".","."],[".","1","5",".",".",".",".",".","."],[".",".",".",".",".","2",".",".","."],[".","2",".","9",".",".",".",".","."],[".",".","4",".",".",".",".",".","."]],
+  valid: [["5","3",".",".","7",".",".",".","."],["6",".",".","1","9","5",".",".","."],[".","9","8",".",".",".",".","6","."],["8",".",".",".","6",".",".",".","3"],["4",".",".","8",".","3",".",".","1"],["7",".",".",".","2",".",".",".","6"],[".","6",".",".",".",".","2","8","."],[".",".",".","4","1","9",".",".","5"],[".",".",".",".","8",".",".","7","9"]]
+};
+EX.col = EX.valid.map((r) => [...r]); EX.col[0][0] = "8";
+
+const CODE = [
+  'class Solution:',
+  '    def isValidSudoku(self, board):',
+  '        # Rule 1: rows',
+  '        for i in board:',
+  '            Set = set()',
+  '            for j in i:',
+  '                if j == ".":',
+  '                    continue',
+  '                if j in Set:',
+  '                    return False',
+  '                else:',
+  '                    Set.add(j)',
+  '',
+  '        # Rule 2: columns',
+  '        for j in range(9):',
+  '            Set = set()',
+  '            for k in range(9):',
+  '                if board[k][j] == ".":',
+  '                    continue',
+  '                if board[k][j] in Set:',
+  '                    return False',
+  '                else:',
+  '                    Set.add(board[k][j])',
+  '',
+  '        # Rule 3: boxes',
+  '        for br in range(0, 9, 3):',
+  '            for bc in range(0, 9, 3):',
+  '                Set = set()',
+  '                for r in range(br, br + 3):',
+  '                    for c in range(bc, bc + 3):',
+  '                        if board[r][c] == ".":',
+  '                            continue',
+  '                        if board[r][c] in Set:',
+  '                            return False',
+  '                        else:',
+  '                            Set.add(board[r][c])',
+  '',
+  '        return True'
+];
+// code line numbers for each rule: [new set, skip, return False, add]
+const LINES = { 1: [5, 8, 10, 12], 2: [16, 19, 21, 23], 3: [28, 32, 34, 36] };
+const RULE_NAME = { 1: 'row', 2: 'column', 3: 'box' };
+const BOX_NAME = ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right'];
+
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function renderCode() {
+  $('code').innerHTML = CODE.map((t, i) => {
+    let body = esc(t);
+    const hash = body.indexOf('#');
+    let cm = '';
+    if (hash >= 0) { cm = `<span class="cm">${body.slice(hash)}</span>`; body = body.slice(0, hash); }
+    body = body.replace(/\b(class|def|for|in|if|else|return|continue|self|range|set)\b/g, '<span class="kw">$1</span>');
+    return `<span class="ln" data-line="${i + 1}"><span class="no">${i + 1}</span>${body}${cm}</span>`;
+  }).join('');
+}
+
+function regions(rule) {
+  const out = [];
+  for (let n = 0; n < 9; n++) {
+    if (rule === 1) out.push({ n, cells: [...Array(9)].map((_, c) => [n, c]), vars: { i: `row ${n}` } });
+    if (rule === 2) out.push({ n, cells: [...Array(9)].map((_, r) => [r, n]), vars: { j: n } });
+    if (rule === 3) {
+      const br = Math.floor(n / 3) * 3, bc = (n % 3) * 3;
+      const cells = [];
+      for (let r = br; r < br + 3; r++) for (let c = bc; c < bc + 3; c++) cells.push([r, c]);
+      out.push({ n, cells, vars: { br, bc } });
+    }
+  }
+  return out;
+}
+
+function buildSteps(board, skipEmpty) {
+  const steps = [];
+  for (const rule of [1, 2, 3]) {
+    const [lNew, lSkip, lFalse, lAdd] = LINES[rule];
+    for (const reg of regions(rule)) {
+      const set = [];  // [digit, r, c]
+      const where = rule === 3 ? `${BOX_NAME[reg.n]} box (rows ${reg.vars.br}–${reg.vars.br + 2}, cols ${reg.vars.bc}–${reg.vars.bc + 2})` : `${RULE_NAME[rule]} ${reg.n}`;
+      const base = () => ({ rule, region: reg.cells, set: set.map((s) => s[0]), inset: set.map((s) => [s[1], s[2]]), vars: { ...reg.vars }, where });
+      steps.push({ ...base(), line: lNew, text: `New ${RULE_NAME[rule]}: the <b>${where}</b>. Start with an empty set.` });
+      for (const [r, c] of reg.cells) {
+        const v = board[r][c];
+        const vars = rule === 1 ? { ...reg.vars, j: JSON.stringify(v) } : rule === 2 ? { ...reg.vars, k: r } : { ...reg.vars, r, c };
+        if (v === '.') {
+          if (!skipEmpty) steps.push({ ...base(), vars, cur: [r, c], line: lSkip, text: `Cell (${r}, ${c}) is empty <code>"."</code>, so skip it.` });
+          continue;
+        }
+        const hit = set.find((s) => s[0] === v);
+        if (hit) {
+          steps.push({ ...base(), vars, cur: [r, c], dup: [[r, c], [hit[1], hit[2]]], dupVal: v, line: lFalse, fail: true,
+            text: `<span class="bad">"${v}" is already in the set</span> (we saw it at (${hit[1]}, ${hit[2]})). Two ${v}s in the same ${RULE_NAME[rule]}, so <code>return False</code>.` });
+          return steps;
+        }
+        set.push([v, r, c]);
+        steps.push({ ...base(), vars, cur: [r, c], line: lAdd, added: v, text: `Cell (${r}, ${c}) is <code>"${v}"</code>. Not in the set yet, so add it.` });
+      }
+    }
+    steps.push({ rule, region: [], set: [], inset: [], vars: {}, line: { 1: 15, 2: 26, 3: 38 }[rule], passed: rule,
+      text: `<span class="good">Rule ${rule} passed.</span> No ${RULE_NAME[rule]} has a repeat.${rule < 3 ? ` Now check ${RULE_NAME[rule + 1]}s.` : ''}` });
+  }
+  steps.push({ rule: 3, region: [], set: [], inset: [], vars: {}, line: 38, done: true, text: '<span class="good">All 3 rules passed.</span> <code>return True</code>: the board is valid.' });
+  return steps;
+}
+
+const $ = (id) => document.getElementById(id);
+let board = EX.fail, steps = [], cur = 0, timer = null;
+
+function renderBoardOnce() {
+  $('colnums').innerHTML = [...Array(9)].map((_, i) => `<span>${i}</span>`).join('');
+  $('rownums').innerHTML = [...Array(9)].map((_, i) => `<span>${i}</span>`).join('');
+  $('board').innerHTML = board.map((row, r) => row.map((v, c) =>
+    `<div class="cell r${r} c${c} ${v === '.' ? 'empty' : ''}" id="cell-${r}-${c}">${v === '.' ? '' : v}</div>`).join('')).join('');
+}
+
+function render() {
+  const s = steps[cur];
+  $('count').textContent = `step ${cur + 1} of ${steps.length}`;
+  $('explain').innerHTML = s.text;
+  document.querySelectorAll('.ln').forEach((el) => {
+    const on = Number(el.dataset.line) === s.line;
+    el.classList.toggle('cur', on && !s.fail);
+    el.classList.toggle('curbad', on && !!s.fail);
+  });
+  document.querySelectorAll('.phase').forEach((el) => {
+    const p = Number(el.dataset.p);
+    const finished = p < s.rule || (s.passed && p <= s.passed) || s.done;
+    el.className = 'phase' + (s.fail && p === s.rule ? ' fail' : finished ? ' done' : p === s.rule ? ' on' : '');
+  });
+  const key = (rc) => `${rc[0]}-${rc[1]}`;
+  const reg = new Set(s.region.map(key)), ins = new Set(s.inset.map(key)), dup = new Set((s.dup || []).map(key));
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    const el = $(`cell-${r}-${c}`), k = `${r}-${c}`;
+    el.classList.toggle('region', reg.has(k));
+    el.classList.toggle('inset', ins.has(k));
+    el.classList.toggle('cur', !!s.cur && key(s.cur) === k);
+    el.classList.toggle('dup', dup.has(k));
+  }
+  $('regionLabel').textContent = s.where ? `Board · checking the ${s.where}` : 'Board';
+  $('setWhat').textContent = RULE_NAME[s.rule];
+  const items = s.set.map((d, i) => `<span class="setitem${s.dupVal === d ? ' dup' : ''}" ${s.added === d && i === s.set.length - 1 ? '' : 'style="animation:none"'}>${d}</span>`).join('');
+  $('setView').innerHTML = s.region.length ? `<span class="brace">{</span>${items}<span class="brace">}</span>` : '<span class="muted">no set right now</span>';
+  $('varsView').innerHTML = Object.entries(s.vars).map(([n, v]) => `<span>${n} = <b>${v}</b></span>`).join('');
+  $('prevBtn').disabled = $('firstBtn').disabled = cur === 0;
+  $('nextBtn').disabled = cur === steps.length - 1;
+  if (cur === steps.length - 1) stop();
+}
+
+function load(name) {
+  stop();
+  if (name) {
+    board = EX[name];
+    document.querySelectorAll('[data-ex]').forEach((b) => b.classList.toggle('on', b.dataset.ex === name));
+  }
+  steps = buildSteps(board, $('skipEmpty').checked);
+  cur = 0;
+  renderBoardOnce();
+  render();
+}
+function stop() { clearInterval(timer); timer = null; $('playBtn').textContent = 'Play'; }
+function play() {
+  if (timer) return stop();
+  if (cur === steps.length - 1) cur = 0;
+  $('playBtn').textContent = 'Pause';
+  timer = setInterval(() => { if (cur < steps.length - 1) { cur++; render(); } else stop(); }, Number($('speed').value));
+}
+
+$('nextBtn').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+$('prevBtn').onclick = () => { if (cur > 0) { cur--; render(); } };
+$('firstBtn').onclick = () => { cur = 0; render(); };
+$('jumpBtn').onclick = () => { const i = steps.findIndex((s) => s.rule === 3); if (i >= 0) { cur = i; render(); } };
+$('playBtn').onclick = play;
+$('speed').oninput = () => { if (timer) { stop(); play(); } };
+$('skipEmpty').onchange = () => load();
+document.querySelectorAll('[data-ex]').forEach((b) => (b.onclick = () => load(b.dataset.ex)));
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') $('nextBtn').click();
+  else if (e.key === 'ArrowLeft') $('prevBtn').click();
+  else if (e.key === ' ') { e.preventDefault(); play(); }
+});
+
+renderCode();
+load('fail');
+$('jumpBtn').click();
+for (let i = 0; i < 3; i++) $('nextBtn').click();
+</script>
+</body>
+</html>

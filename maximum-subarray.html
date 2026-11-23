@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Maximum Subarray · Step by Step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Layout: controls on top, code on the left, live variables on the right; one column on phones. */
+:root {
+  --bg: #f1f3f0;
+  --surface: #ffffff;
+  --ink: #17211c;
+  --muted: #5c6862;
+  --line: #dde2dd;
+  --accent: #0e7a6a;
+  --accent-soft: rgba(14, 122, 106, 0.12);
+  --hl: #fff1b8;
+  --warm: #c25a1c;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111513; --surface: #1a1f1c; --ink: #e7ece8; --muted: #9ba7a0; --line: #2c3430;
+    --accent: #3cc2aa; --accent-soft: rgba(60, 194, 170, 0.16); --hl: rgba(255, 214, 102, 0.18); --warm: #f08a4b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111513; --surface: #1a1f1c; --ink: #e7ece8; --muted: #9ba7a0; --line: #2c3430;
+  --accent: #3cc2aa; --accent-soft: rgba(60, 194, 170, 0.16); --hl: rgba(255, 214, 102, 0.18); --warm: #f08a4b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); padding: 20px 16px 40px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { font-size: 24px; margin: 0; text-wrap: balance; }
+.lead { color: var(--muted); margin: 4px 0 0; max-width: 65ch; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+
+.inputs { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.inputs label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+input[type="text"], input[type="number"] { font: 14px var(--font-mono); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+#numsIn { width: min(340px, 80vw); }
+#kIn { width: 70px; }
+button { font: 500 14px var(--font-body); border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.chip { font: 12px var(--font-mono); padding: 4px 9px; border-radius: 99px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.err { color: var(--warm); font-size: 13px; min-height: 1em; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls .grow { flex: 1; }
+.count { font: 13px var(--font-mono); color: var(--muted); }
+input[type="range"] { accent-color: var(--accent); width: 110px; }
+.phases { display: flex; gap: 6px; flex-wrap: wrap; }
+.phase { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.phase.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.phase.done { color: var(--accent); border-color: var(--accent); }
+.explain { font-size: 17px; font-weight: 500; min-height: 2.6em; max-width: 75ch; }
+.explain code { font-family: var(--font-mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; font-size: 15px; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 820px) { .main { grid-template-columns: 1fr; } }
+
+pre.code { margin: 0; font: 13.5px/1.75 var(--font-mono); overflow-x: auto; }
+.ln { display: block; padding: 0 8px; border-radius: 4px; white-space: pre; }
+.ln .no { display: inline-block; width: 2.2em; color: var(--muted); user-select: none; }
+.ln.cur { background: var(--hl); font-weight: 600; }
+.ln.cur .no { color: var(--ink); }
+.kw { color: var(--accent); }
+.cm { color: var(--muted); }
+
+.state { display: grid; gap: 12px; }
+.boxes { display: flex; flex-wrap: wrap; gap: 6px; }
+.box { position: relative; min-width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 6px; font: 600 15px var(--font-mono); background: var(--bg); }
+.box.seen { color: var(--muted); }
+.box.cur { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--ink); }
+.box .idx { position: absolute; bottom: -17px; font: 10px var(--font-mono); color: var(--muted); }
+.boxes.nums { padding-bottom: 14px; }
+
+table { border-collapse: collapse; font: 14px var(--font-mono); }
+th, td { border: 1px solid var(--line); padding: 5px 14px; text-align: center; font-variant-numeric: tabular-nums; }
+th { font: 600 12px var(--font-body); color: var(--muted); background: var(--bg); }
+tr.flash td { background: var(--accent-soft); font-weight: 600; }
+.empty { color: var(--muted); font-size: 13px; font-style: italic; }
+
+.pairs { display: flex; flex-wrap: wrap; gap: 6px; }
+.pair { font: 14px var(--font-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.pair .t { color: var(--warm); font-weight: 600; }
+.pair.cur { border: 2px solid var(--accent); background: var(--accent-soft); }
+.pair.taken { opacity: .45; }
+.vars { display: flex; flex-wrap: wrap; gap: 14px; font: 14px var(--font-mono); }
+.vars span b { color: var(--accent); }
+.result .box { border-color: var(--accent); color: var(--accent); }
+.note { font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  tr.flash td, .box.cur, .pair.cur { transition: background .25s; }
+}
+</style>
+
+<style>
+.sitenav { max-width: 1120px; margin: 0 auto 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sitenav .brand { font-weight: 700; margin-right: 8px; color: var(--ink); text-decoration: none; }
+.sitenav a.pg { font: 500 13px var(--font-body); padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; background: var(--surface); }
+.sitenav a.pg:hover { border-color: var(--accent); }
+.sitenav a.pg.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+</style>
+<style>.wrap { grid-template-columns: minmax(0, 1fr); } .wrap > *, .main > *, .state > * { min-width: 0; } .boxes, .pairs { min-width: 0; }</style>
+</head>
+<body>
+<nav class="sitenav"><a class="brand" href="index.html">Giri's DSA Lab</a><a class="pg" href="valid-sudoku.html">Valid Sudoku</a><a class="pg" href="top-k-frequent.html">Top K Frequent</a><a class="pg on" href="maximum-subarray.html">Maximum Subarray</a><a class="pg" href="group-anagrams.html">Group Anagrams</a></nav>
+<div class="wrap">
+  <header>
+    <h1>Maximum Subarray, step by step</h1>
+    <p class="lead">Kadane's idea: keep a running sum <span style="font-family:var(--font-mono)">cur</span>. Save the best sum FIRST, then drop the running sum if it goes negative, because a negative start only makes the next subarray smaller.</p>
+  </header>
+
+  <section class="card">
+    <div class="inputs">
+      <label for="numsIn">nums<input id="numsIn" type="text" value="-2, 1, -3, 4, -1, 2, 1, -5, 4" /></label>
+      <button id="loadBtn">Run this input</button>
+    </div>
+    <div class="chips" style="margin-top:10px">Try:
+      <button class="chip" data-n="-2,1,-3,4,-1,2,1,-5,4">[-2,1,-3,4,-1,2,1,-5,4]</button>
+      <button class="chip" data-n="5,4,-1,7,8">[5,4,-1,7,8]</button>
+      <button class="chip" data-n="-3,-1,-2">[-3,-1,-2] all negative</button>
+      <button class="chip" data-n="1">[1]</button>
+    </div>
+    <div class="err" id="err"></div>
+  </section>
+
+  <section class="card">
+    <div class="controls">
+      <button class="ghost" id="firstBtn">First</button>
+      <button class="ghost" id="prevBtn">Back</button>
+      <button id="nextBtn">Next step</button>
+      <button class="ghost" id="playBtn">Play</button>
+      <label class="count" for="speed">speed <input id="speed" type="range" min="200" max="2000" step="100" value="900" /></label>
+      <span class="grow"></span>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="phases" style="margin-top:10px">
+      <span class="phase" data-p="1">1 · Set up</span>
+      <span class="phase" data-p="2">2 · Walk the array</span>
+      <span class="phase" data-p="3">3 · Return best</span>
+    </div>
+    <div class="explain" id="explain" style="margin-top:10px" aria-live="polite"></div>
+  </section>
+
+  <div class="main">
+    <section class="card">
+      <div class="label">Your code</div>
+      <pre class="code" id="code"></pre>
+    </section>
+
+    <section class="state">
+      <div class="card">
+        <div class="label">nums · <span style="color:var(--accent)">running subarray</span> · <span style="color:var(--warm)">best subarray</span></div>
+        <div class="boxes nums" id="numsView"></div>
+      </div>
+      <div class="card">
+        <div class="label">Running sum vs best</div>
+        <div class="kv" id="kv"></div>
+      </div>
+      <div class="card">
+        <div class="label">History (cur after each number)</div>
+        <div id="hist"></div>
+      </div>
+    </section>
+  </div>
+
+  <p class="note">Keyboard: → next step, ← back, space play or pause.</p>
+</div>
+<style>
+.box.run { border: 2px solid var(--accent); background: var(--accent-soft); }
+.box.best { box-shadow: inset 0 -4px 0 var(--warm); }
+.box.reset { opacity: .45; }
+.kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.kv div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
+.kv span { display: block; font-size: 12px; color: var(--muted); }
+.kv b { font: 600 26px var(--font-mono); }
+.kv .curv b { color: var(--accent); }
+.kv .bestv b { color: var(--warm); }
+.kv .flash { box-shadow: 0 0 0 2px var(--accent); }
+.hbar { display: flex; align-items: flex-end; gap: 6px; height: 120px; border-bottom: 1px solid var(--line); padding-top: 18px; }
+.hbar .col { flex: 1; max-width: 42px; display: grid; justify-items: center; gap: 2px; font: 11px var(--font-mono); color: var(--muted); }
+.hbar .bar { width: 100%; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 4px 4px 0 0; }
+.hbar .bar.neg { background: transparent; border-style: dashed; border-color: var(--muted); }
+</style>
+<script>
+const CODE = [
+  ['class Solution:', ''],
+  ['    def maxSubArray(self, nums):', ''],
+  ['        best = float("-inf")', ''],
+  ['        cur = 0', ''],
+  ['        for x in nums:', ''],
+  ['            cur += x', ''],
+  ['            best = max(best, cur)', 'cm:   # save best FIRST'],
+  ['            if cur < 0:', ''],
+  ['                cur = 0', 'cm:           # then drop a negative start'],
+  ['        return best', '']
+];
+const KW = /\b(class|def|for|in|if|else|return|self|max|float)\b/g;
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function renderCode() {
+  document.getElementById('code').innerHTML = CODE.map(([text, extra], i) => {
+    const body = esc(text).replace(KW, '<span class="kw">$1</span>');
+    const cm = extra.startsWith('cm:') ? `<span class="cm">${esc(extra.slice(3))}</span>` : '';
+    return `<span class="ln" data-line="${i + 1}"><span class="no">${i + 1}</span>${body}${cm}</span>`;
+  }).join('');
+}
+
+function buildSteps(nums) {
+  const steps = [];
+  let best = -Infinity, cur = 0, start = 0, bestL = -1, bestR = -1;
+  const hist = [];
+  const snap = (line, phase, text, extra = {}) => steps.push({
+    line, phase, text, best, cur, runL: start, idx: -1, bestL, bestR, hist: [...hist], flash: null, ...extra
+  });
+  const show = (v) => (v === -Infinity ? '-∞' : v);
+
+  snap(3, 1, 'Start <code>best</code> at minus infinity, so any real sum beats it. That is what makes the all-negative case work.', { runL: -1 });
+  snap(4, 1, 'Start the running sum <code>cur = 0</code>.', { runL: -1, flash: 'cur' });
+  nums.forEach((x, i) => {
+    snap(5, 2, `Next number: <code>x = ${x}</code> (index ${i}).`, { idx: i, runL: start, runR: i - 1 });
+    cur += x;
+    snap(6, 2, `Add it to the running sum: <code>cur = ${cur - x} + ${x < 0 ? `(${x})` : x} = ${cur}</code>.`, { idx: i, runR: i, flash: 'cur' });
+    const old = best;
+    if (cur > best) { best = cur; bestL = start; bestR = i; }
+    hist.push(cur);
+    snap(7, 2, cur > old
+      ? `<code>${cur}</code> beats the old best <code>${show(old)}</code>. New <code>best = ${best}</code>. Save it before any reset.`
+      : `<code>${cur}</code> does not beat <code>best = ${best}</code>. Keep the old best.`,
+      { idx: i, runR: i, flash: cur > old ? 'best' : null });
+    if (cur < 0) {
+      snap(8, 2, `<code>cur = ${cur}</code> is negative. A negative start would only drag the next numbers down.`, { idx: i, runR: i });
+      cur = 0; start = i + 1;
+      snap(9, 2, 'So reset <code>cur = 0</code> and start a fresh subarray from the next number.', { idx: i, runL: -1, flash: 'cur', reset: i });
+    } else {
+      snap(8, 2, `<code>cur = ${cur}</code> is not negative, so keep this subarray going.`, { idx: i, runR: i });
+    }
+  });
+  snap(10, 3, `Done. Return <code>best = ${best}</code>, from index ${bestL} to ${bestR}: <code>[${nums.slice(bestL, bestR + 1).join(', ')}]</code>.`, { runL: -1, flash: 'best' });
+  return steps;
+}
+
+let nums = [], steps = [], cur = 0, timer = null;
+const $ = (id) => document.getElementById(id);
+
+function render() {
+  const s = steps[cur];
+  $('count').textContent = `step ${cur + 1} of ${steps.length}`;
+  $('explain').innerHTML = s.text;
+  document.querySelectorAll('.ln').forEach((el) => el.classList.toggle('cur', Number(el.dataset.line) === s.line));
+  document.querySelectorAll('.phase').forEach((el) => {
+    const p = Number(el.dataset.p);
+    el.classList.toggle('on', p === s.phase);
+    el.classList.toggle('done', p < s.phase);
+  });
+  const runR = s.runR ?? -1;
+  $('numsView').innerHTML = nums.map((x, i) => {
+    const cls = [];
+    if (i === s.idx) cls.push('cur');
+    else if (s.runL >= 0 && i >= s.runL && i <= runR) cls.push('run');
+    if (s.bestL >= 0 && i >= s.bestL && i <= s.bestR) cls.push('best');
+    if (i === s.reset) cls.push('reset');
+    return `<div class="box ${cls.join(' ')}">${x}<span class="idx">${i}</span></div>`;
+  }).join('');
+  const show = (v) => (v === -Infinity ? '-∞' : v);
+  $('kv').innerHTML = `<div class="curv ${s.flash === 'cur' ? 'flash' : ''}"><span>cur (running sum)</span><b>${s.cur}</b></div>
+    <div class="bestv ${s.flash === 'best' ? 'flash' : ''}"><span>best (biggest so far)</span><b>${show(s.best)}</b></div>`;
+  const mx = Math.max(1, ...nums.map((_, i) => Math.abs(s.hist[i] ?? 0)));
+  $('hist').innerHTML = s.hist.length
+    ? `<div class="hbar">${nums.map((_, i) => {
+        const v = s.hist[i];
+        if (v == null) return '<div class="col"></div>';
+        return `<div class="col"><span>${v}</span><div class="bar ${v < 0 ? 'neg' : ''}" style="height:${Math.max(4, Math.abs(v) / mx * 80)}px"></div><span>${i}</span></div>`;
+      }).join('')}</div><div class="note" style="margin-top:6px">Dashed bars are negative sums: those get reset to 0.</div>`
+    : '<span class="empty">no numbers read yet</span>';
+  $('prevBtn').disabled = $('firstBtn').disabled = cur === 0;
+  $('nextBtn').disabled = cur === steps.length - 1;
+  if (cur === steps.length - 1) stop();
+}
+
+function load() {
+  const parsed = $('numsIn').value.trim().replace(/[\[\]]/g, '').split(/[\s,]+/).filter(Boolean).map(Number);
+  if (!parsed.length || parsed.some((n) => !Number.isInteger(n))) { $('err').textContent = 'Type whole numbers separated by commas, like -2, 1, -3, 4.'; return; }
+  if (parsed.length > 16) { $('err').textContent = 'Keep it to 16 numbers or fewer so every step fits on screen.'; return; }
+  $('err').textContent = '';
+  stop(); nums = parsed; steps = buildSteps(nums); cur = 0; render();
+}
+function stop() { clearInterval(timer); timer = null; $('playBtn').textContent = 'Play'; }
+function play() {
+  if (timer) return stop();
+  if (cur === steps.length - 1) cur = 0;
+  $('playBtn').textContent = 'Pause';
+  timer = setInterval(() => { if (cur < steps.length - 1) { cur++; render(); } else stop(); }, Number($('speed').value));
+}
+$('loadBtn').onclick = load;
+$('nextBtn').onclick = () => { if (cur < steps.length - 1) { cur++; render(); } };
+$('prevBtn').onclick = () => { if (cur > 0) { cur--; render(); } };
+$('firstBtn').onclick = () => { cur = 0; render(); };
+$('playBtn').onclick = play;
+$('speed').oninput = () => { if (timer) { stop(); play(); } };
+document.querySelectorAll('.chip').forEach((c) => c.onclick = () => { $('numsIn').value = c.dataset.n.replace(/,/g, ', '); load(); });
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') $('nextBtn').click();
+  else if (e.key === 'ArrowLeft') $('prevBtn').click();
+  else if (e.key === ' ') { e.preventDefault(); play(); }
+});
+renderCode();
+load();
+</script>
+</body>
+</html>
