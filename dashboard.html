@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DSA Lab Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { display: grid; gap: 4px; }
+.kpi .v { font: 600 30px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: 16px; color: var(--muted); font-weight: 500; }
+.kpi .s { font-size: 13px; color: var(--muted); }
+.meter { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.meter.good i { background: var(--good); }
+
+.forecast { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 24px; }
+@media (max-width: 900px) { .forecast { grid-template-columns: minmax(0, 1fr); } }
+.fhead { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.fhead h2 { font-size: 20px; }
+.ctrl { display: grid; gap: 6px; margin-bottom: 14px; }
+.ctrl span { font-size: 13px; color: var(--muted); font-weight: 500; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; padding: 3px; background: var(--surface-2); gap: 2px; width: max-content; max-width: 100%; }
+.seg button { background: transparent; border: 0; color: var(--muted); padding: 6px 13px; border-radius: 7px; font-weight: 600; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.seg button:hover { color: var(--ink); filter: none; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.answer { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
+.answer .big { font: 600 34px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.answer .big small { font-size: 15px; font-weight: 500; color: var(--muted); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.verdict { font-size: 13.5px; font-weight: 600; padding: 8px 11px; border-radius: 8px; }
+.verdict.ok { background: var(--good-soft); color: var(--good); }
+.verdict.late { background: var(--warm-soft); color: var(--warm); }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font: 11px var(--font-body); fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.compare { width: 100%; margin-top: 14px; font-family: var(--font-body); font-size: 13.5px; }
+.compare th, .compare td { text-align: left; padding: 7px 10px; }
+.compare td:not(:first-child), .compare th:not(:first-child) { text-align: right; }
+.compare tr.on td { background: var(--accent-soft); font-weight: 600; }
+
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.sec { display: grid; gap: 12px; }
+.sech { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.sech h2 { font-size: 19px; }
+
+.cps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 860px) { .cps { grid-template-columns: minmax(0, 1fr); } }
+.cp { display: grid; gap: 6px; }
+.cp .d { font-size: 12.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.cp .t { font: 600 22px var(--font-display); font-variant-numeric: tabular-nums; }
+.cp .t small { font-size: 14px; color: var(--muted); font-weight: 500; }
+.cp .need { font-size: 13px; }
+.cp .need b { font-variant-numeric: tabular-nums; }
+
+.topics { display: grid; gap: 2px; }
+.trow { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 52px; gap: 12px; align-items: center; padding: 6px 8px; border-radius: 7px; font-size: 13.5px; }
+.trow.now { background: var(--accent-soft); }
+.trow .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow.now .n { font-weight: 600; }
+.trow .c { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.tbar { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.tbar i { display: block; height: 100%; background: var(--good); border-radius: 99px; }
+
+.players { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .players { grid-template-columns: minmax(0, 1fr); } }
+.pc { display: grid; gap: 8px; color: var(--ink); transition: border-color .15s, transform .15s; }
+.pc:hover { text-decoration: none; border-color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .pc:hover { transform: translateY(-1px); } }
+.pc .top { display: flex; align-items: center; gap: 8px; }
+.pc .lc { font: 12px var(--font-mono); color: var(--faint); }
+.pc h3 { font-size: 17px; }
+.pc p { margin: 0; color: var(--muted); font-size: 14px; }
+.pc .go { font-weight: 600; color: var(--accent); font-size: 13.5px; }
+
+.log { width: 100%; font-family: var(--font-body); font-size: 14px; }
+.log th, .log td { text-align: left; padding: 9px 10px; }
+.log td.d { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
+</style>
+
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html"><span class="mark">{ }</span>DSA Lab</a>
+  <nav class="topnav"><a href="index.html">Problems</a><a class="on" href="dashboard.html">Dashboard</a></nav>
+  <a class="gh" href="https://github.com/giriselvansridhar/DSA">GitHub ↗</a>
+</div></header>
+
+<main class="page">
+  <div class="phead">
+    <div class="eyebrow" id="today"></div>
+    <h1>Road to 1 May 2027</h1>
+    <p class="lead">NeetCode 150 in Python 3, two new problems and one redo a day, then contest practice. Everything below updates as the log grows.</p>
+  </div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="card">
+    <div class="fhead">
+      <h2>How long until all 150 are done?</h2>
+      <span class="muted" id="fsub"></span>
+    </div>
+    <div class="forecast">
+      <div>
+        <div class="ctrl"><span>New problems per study day</span>
+          <div class="seg" id="perDay" role="group" aria-label="New problems per day"></div></div>
+        <div class="ctrl"><span>Study days per week</span>
+          <div class="seg" id="perWeek" role="group" aria-label="Study days per week"></div></div>
+        <div class="answer" id="answer"></div>
+      </div>
+      <div class="chart">
+        <div id="chart"></div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Projected NeetCode 150 progress</span>
+          <span><i style="background:var(--warm)"></i>Target date (14 Mar)</span>
+          <span><i style="background:var(--good)"></i>Done so far</span>
+        </div>
+        <div class="tablewrap"><table class="compare" id="compare"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sech"><h2>Checkpoints</h2><span class="muted">Total LeetCode problems solved</span></div>
+    <div class="cps" id="cps"></div>
+  </section>
+
+  <div class="two">
+    <section class="sec">
+      <div class="sech"><h2>Topics</h2><span class="muted" id="weekNow"></span></div>
+      <div class="card topics" id="topics"></div>
+    </section>
+    <section class="sec">
+      <div class="sech"><h2>Step-by-step players</h2><span class="muted">Press Play and watch the code run</span></div>
+      <div class="players" id="players"></div>
+      <div class="sech" style="margin-top:8px"><h2>Recent log</h2><span class="muted">Newest first</span></div>
+      <div class="card tablewrap" style="padding:0"><table class="log" id="log"></table></div>
+    </section>
+  </div>
+</main>
+<footer class="site" id="foot"></footer>
+
+<script src="assets/data.js"></script>
+<script>
+(function () {
+  const D = window.DSA;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const DAY = 864e5;
+  const toD = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const fmt = (d, o) => d.toLocaleDateString('en-GB', o || { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const short = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const ist = new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000);
+  const today = new Date(ist.getFullYear(), ist.getMonth(), ist.getDate());
+  const daysBetween = (a, b) => Math.round((b - a) / DAY);
+
+  // nav
+
+  // derived numbers
+  const done = D.problems.filter((p) => p[4]).length;
+  const remaining = D.problems.length - done;
+  const newSolved = D.log.filter((r) => r.type === 'New' && /Solved|Needed/.test(r.status) && r.date > D.baseline.date).length;
+  const total = D.baseline.total + newSolved;
+  const finished = D.log.filter((r) => /Solved|Needed/.test(r.status));
+  const alone = finished.filter((r) => r.status === 'Solved alone').length;
+  const activeDays = new Set(finished.map((r) => r.date));
+  let streak = 0;
+  for (let d = activeDays.has(key(today)) ? today : addDays(today, -1); activeDays.has(key(d)); d = addDays(d, -1)) streak++;
+
+  $('today').textContent = fmt(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const daysToGoal = daysBetween(today, toD('2027-05-01'));
+  $('kpis').innerHTML = [
+    ['NeetCode 150', `${done}<small> / 150</small>`, `${Math.round(done / 1.5)}% done · ${remaining} to go`, done / 150, ''],
+    ['Total solved on LeetCode', `${total}`, `Next checkpoint: 170 by 17 Jan`, total / 170, ''],
+    ['Solved alone', finished.length ? `${Math.round(alone / finished.length * 100)}%` : '–', `${alone} of ${finished.length} logged attempts`, finished.length ? alone / finished.length : 0, 'good'],
+    ['Days to 1 May 2027', `${daysToGoal}`, streak ? `Streak: ${streak} day${streak > 1 ? 's' : ''} in a row` : 'Start a streak today', null, '']
+  ].map(([l, v, s, m, c]) => `<div class="card kpi"><div class="label" style="margin:0">${l}</div><div class="v">${v}</div><div class="s">${s}</div>
+      ${m != null ? `<div class="meter ${c}"><i style="width:${Math.min(100, m * 100).toFixed(1)}%"></i></div>` : ''}</div>`).join('');
+
+  // ---------- forecast ----------
+  const target = toD(D.plan.ncTarget);
+  let perDay = D.plan.newPerDay, perWeek = D.plan.daysPerWeek;
+  const isStudy = (d, pw) => { const w = d.getDay(); return pw === 7 || (pw === 6 ? w !== 0 : w !== 0 && w !== 6); };
+  function project(pd, pw) {
+    // count from today; returns finish date, study days, series of [date, doneCount]
+    let left = remaining, d = new Date(today), study = 0, count = done;
+    const series = [[new Date(today), done]];
+    let guard = 0;
+    while (left > 0 && guard++ < 2000) {
+      if (isStudy(d, pw)) { const n = Math.min(pd, left); left -= n; count += n; study++; series.push([new Date(d), count]); }
+      if (left > 0) d = addDays(d, 1);
+    }
+    return { finish: d, study, cal: daysBetween(today, d) + 1, series };
+  }
+  function seg(el, values, cur, suffix, on) {
+    el.innerHTML = values.map((v) => `<button type="button" class="${v === cur ? 'on' : ''}" data-v="${v}" aria-pressed="${v === cur}">${v}${suffix}</button>`).join('');
+    el.onclick = (e) => { const b = e.target.closest('button'); if (b) on(Number(b.dataset.v)); };
+  }
+  function drawChart(p) {
+    const W = 640, H = 260, L = 38, R = 14, T = 14, B = 30;
+    const end = new Date(Math.max(p.finish, target, addDays(today, 30)));
+    const x0 = today.getTime(), x1 = addDays(end, 7).getTime();
+    const x = (d) => L + (d - x0) / (x1 - x0) * (W - L - R);
+    const y = (v) => T + (1 - v / 150) * (H - T - B);
+    let g = '';
+    for (const v of [0, 50, 100, 150]) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    const months = [];
+    for (let m = new Date(today.getFullYear(), today.getMonth() + 1, 1); m <= addDays(end, 7); m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) months.push(m);
+    const step = Math.ceil(months.length / 6);
+    months.forEach((m, i) => { if (i % step === 0) g += `<line x1="${x(m)}" x2="${x(m)}" y1="${H - B}" y2="${H - B + 4}" stroke="var(--grid-strong)"/><text x="${x(m)}" y="${H - 10}" text-anchor="middle">${m.toLocaleDateString('en-GB', { month: 'short' })}</text>`; });
+    g += `<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--grid-strong)"/>`;
+    // target
+    g += `<line x1="${x(target)}" x2="${x(target)}" y1="${T}" y2="${H - B}" stroke="var(--warm)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+    g += `<text x="${x(target) + (x(target) > W - 90 ? -6 : 6)}" y="${H - B - 8}" text-anchor="${x(target) > W - 90 ? 'end' : 'start'}" style="fill:var(--warm);font-weight:600">Target 14 Mar</text>`;
+    // projected path (step-ish polyline thinned)
+    const pts = p.series.filter((_, i, a) => i === 0 || i === a.length - 1 || i % 2 === 0).map(([d, v]) => `${x(d).toFixed(1)},${y(v).toFixed(1)}`);
+    const area = `M${x(today)},${y(0)} L${pts.join(' L')} L${x(p.finish)},${y(0)} Z`;
+    g += `<path d="${area}" fill="var(--accent-soft)" stroke="none"/>`;
+    g += `<polyline points="${pts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>`;
+    // done marker + finish marker
+    g += `<circle cx="${x(today)}" cy="${y(done)}" r="5" fill="var(--good)" stroke="var(--surface)" stroke-width="2"/>`;
+    g += `<text x="${x(today) + 9}" y="${y(done) + 4}" style="fill:var(--good);font-weight:600">${done} today</text>`;
+    const fx = x(p.finish), anchor = fx > W - 120 ? 'end' : 'start';
+    g += `<circle cx="${fx}" cy="${y(150)}" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`;
+    g += `<text x="${fx + (anchor === 'end' ? -9 : 9)}" y="${y(150) + 18}" text-anchor="${anchor}" style="fill:var(--ink);font-weight:600">150 on ${short(p.finish)}</text>`;
+    $('chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Projected NeetCode 150 progress until ${fmt(p.finish)}">${g}</svg>`;
+  }
+  function renderForecast() {
+    seg($('perDay'), [1, 2, 3, 4], perDay, ' / day', (v) => { perDay = v; renderForecast(); });
+    seg($('perWeek'), [5, 6, 7], perWeek, ' days', (v) => { perWeek = v; renderForecast(); });
+    const p = project(perDay, perWeek);
+    const diff = daysBetween(p.finish, target);
+    $('answer').innerHTML = `
+      <div class="big">${p.cal}<small> calendar days</small></div>
+      <dl class="facts">
+        <dt>Problems left</dt><dd>${remaining}</dd>
+        <dt>Study days needed</dt><dd>${p.study}</dd>
+        <dt>Finish date</dt><dd>${fmt(p.finish)}</dd>
+      </dl>
+      <div class="verdict ${diff >= 0 ? 'ok' : 'late'}">${diff >= 0
+        ? `On track: ${diff} day${diff === 1 ? '' : 's'} before the 14 Mar target.`
+        : `${-diff} day${diff === -1 ? '' : 's'} after the 14 Mar target. Add a problem a day or a study day a week.`}</div>`;
+    $('fsub').textContent = `Plan: ${D.plan.newPerDay} new a day, ${D.plan.daysPerWeek} days a week (Sunday is contest day)`;
+    drawChart(p);
+    $('compare').innerHTML = `<tr><th>Pace (${perWeek} days a week)</th><th>Study days</th><th>Finish</th><th>vs 14 Mar</th></tr>` +
+      [1, 2, 3, 4].map((pd) => {
+        const q = project(pd, perWeek), df = daysBetween(q.finish, target);
+        return `<tr class="${pd === perDay ? 'on' : ''}"><td>${pd} new / day</td><td class="num">${q.study}</td><td class="num">${short(q.finish)} ${q.finish.getFullYear()}</td>
+          <td class="num" style="color:${df >= 0 ? 'var(--good)' : 'var(--warm)'}">${df >= 0 ? `${df} d early` : `${-df} d late`}</td></tr>`;
+      }).join('');
+  }
+  renderForecast();
+
+  // ---------- checkpoints ----------
+  $('cps').innerHTML = D.checkpoints.map((c) => {
+    const d = toD(c.date), left = Math.max(0, daysBetween(today, d));
+    const need = Math.max(0, c.total - total);
+    const studyLeft = Math.max(1, Math.round(left * 6 / 7));
+    return `<div class="card cp"><div class="d">${fmt(d, { day: 'numeric', month: 'short', year: 'numeric' })} · ${left} days left</div>
+      <div class="t">${total}<small> / ${c.total} solved</small></div>
+      <div class="meter"><i style="width:${Math.min(100, total / c.total * 100).toFixed(1)}%"></i></div>
+      <div class="need">${need ? `Need <b>${need}</b> more, about <b>${(need / studyLeft).toFixed(1)}</b> a study day.` : 'Reached.'}</div>
+      <div class="muted">Rating: ${esc(c.rating)} · ${esc(c.proof)}</div></div>`;
+  }).join('');
+
+  // ---------- topics ----------
+  const wk = D.weeks.find((w) => key(today) >= w[1] && key(today) <= w[2]) || D.weeks.find((w) => key(today) < w[1]);
+  $('weekNow').textContent = wk ? `This week (${wk[0]}): ${wk[3]}` : '';
+  const order = [...new Set(D.problems.map((p) => p[3]))];
+  const nowTopics = wk ? order.filter((t) => wk[3].toLowerCase().includes(t.toLowerCase().split(' ')[0].replace('&', ''))) : [];
+  $('topics').innerHTML = order.map((t) => {
+    const ps = D.problems.filter((p) => p[3] === t), d = ps.filter((p) => p[4]).length;
+    return `<div class="trow ${nowTopics.includes(t) ? 'now' : ''}"><span class="n" title="${esc(t)}">${esc(t)}</span>
+      <div class="tbar"><i style="width:${(d / ps.length * 100).toFixed(1)}%"></i></div><span class="c">${d}/${ps.length}</span></div>`;
+  }).join('');
+
+  // ---------- players + log ----------
+  const pill = (s) => `<span class="pill ${s === 'Solved alone' ? 'ok' : s === 'Needed help' ? 'help' : 'todo'}">${esc(s)}</span>`;
+  $('players').innerHTML = D.players.map((p) => `<a class="card pc" href="${p.file}">
+      <div class="top"><span class="lc">#${p.num}</span><span class="pill med">${p.diff}</span><span class="grow"></span>${pill(p.status)}</div>
+      <h3>${esc(p.name)}</h3><p>${esc(p.idea)}</p><span class="go">▶ Watch step by step</span></a>`).join('');
+  $('log').innerHTML = `<tr><th>Date</th><th>Problem</th><th>Type</th><th>Status</th></tr>` + D.log.map((r) =>
+    `<tr><td class="d">${short(toD(r.date))}</td><td>${esc(r.name)}<div class="muted">${esc(r.topic)}</div></td><td>${r.type}</td><td>${pill(r.status)}</td></tr>`).join('');
+  $('foot').innerHTML = `Updated ${fmt(toD(D.updated), { day: 'numeric', month: 'short', year: 'numeric' })} · Python 3 · <a href="https://leetcode.com/u/giriselvan1/">LeetCode profile</a>`;
+})();
+</script>
+
+</body>
+</html>
